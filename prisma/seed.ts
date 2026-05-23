@@ -900,7 +900,7 @@ async function main() {
 }
 
 main()
-  .catch((e) => {
+  .catch((e: unknown) => {
     console.error("❌ Seeding failed:", e);
     process.exit(1);
   })

@@ -1,16 +1,43 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { inter, playfair } from "@/lib/fonts";
-// import { Inter } from "next/font/google";
+import { inter, spaceGrotesk } from "@/lib/fonts";
 import { cn } from "@/lib/utils";
 
-// const inter = Inter({subsets:['latin'],variable:'--font-sans'});
-
 export const metadata: Metadata = {
-  title: "Travel Planner",
-  description: "Find the best time and prices to travel",
+  title: {
+    default: "Smarrrt — Visa POF Strategy Dashboard",
+    template: "%s | Smarrrt",
+  },
+  description:
+    "Stop guessing your Proof of Funds. Plan your exact Naira target, track parallel market rates, and build a bulletproof bank statement timeline for UK, Canada, US, and beyond.",
+  keywords: [
+    "proof of funds Nigeria",
+    "visa bank statement Nigeria",
+    "UK visa POF calculator",
+    "Canada visa bank statement",
+    "Nigerian visa financial requirements",
+    "parallel market rate visa",
+  ],
+  authors: [{ name: "Smarrrt" }],
+  openGraph: {
+    type: "website",
+    locale: "en_NG",
+    title: "Smarrrt — Visa POF Strategy Dashboard",
+    description:
+      "The smart way for Nigerians to plan their visa Proof of Funds. Live parallel rates, embassy timelines, and statement health analysis.",
+    siteName: "Smarrrt",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Smarrrt — Visa POF Strategy Dashboard",
+    description:
+      "Stop guessing your POF. Plan your exact Naira target with live parallel market rates.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -19,7 +46,8 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={cn("h-full", `${inter.variable} ${playfair.variable}`)}
+      suppressHydrationWarning
+      className={cn("h-full", `${inter.variable} ${spaceGrotesk.variable}`)}
     >
       <body className="min-h-full flex flex-col font-sans antialiased">
         {children}
