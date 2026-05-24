@@ -97,8 +97,13 @@ export async function GET(request: NextRequest) {
       studyIntakesFull = intakes;
     }
 
+    const formattedRule = {
+  ...rule,
+  nigeriaSpecific: rule.nigerianSpecific
+};
+
     const calculation = calculatePof({
-      rule,
+      rule:formattedRule,
       fxRate,
       intakeDate,
       intakeMonths: studyIntakes,

@@ -33,24 +33,27 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
-// 1. Keep this as a clean, plain object
-const prismaOptions = {
-  log:
-    process.env.NODE_ENV === "development"
-      ? ["query", "error", "warn"]
-      : ["error"],
-} as any; // Shuts up errors regarding dynamic assignments
+// 1. Initialize a clean configuration object with proper formatting
+const isDev = process.env.NODE_ENV === "development";
+const logConfig: ("query" | "error" | "warn")[] = isDev
+  ? ["query", "error", "warn"]
+  : ["error"];
 
-// 2. Attach the adapter if the database string is live
+// 2. Define the exact structure Prisma expects so TypeScript stays happy
+let adapterInstance: PrismaPg | undefined = undefined;
+
 if (process.env.DATABASE_URL) {
   const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-  const adapter = new PrismaPg(pool);
-  prismaOptions.adapter = adapter;
+  adapterInstance = new PrismaPg(pool);
 }
 
-// 3. Force-cast 'prismaOptions' into what the PrismaClient constructor expects
+// 3. Pass clean, explicitly structured arguments directly into the constructor
 export const prisma =
-  globalForPrisma.prisma ?? new PrismaClient(prismaOptions as any);
+  globalForPrisma.prisma ??
+  new PrismaClient({
+    log: logConfig,
+    ...(adapterInstance ? { adapter: adapterInstance } : {}),
+  });
 
 if (process.env.NODE_ENV !== "production") {
   globalForPrisma.prisma = prisma;
