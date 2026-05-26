@@ -7,7 +7,7 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-// import { Chrome } from "lucide-react"
+// import { Chrome } from "lucide-react";
 
 export default function SignInPage() {
   return (
