@@ -41,7 +41,7 @@ export type PofRule = {
   minAmountForeign: number;
   requiresHistory: boolean;
   analysisText: string;
-  nigeriaSpecific: string;
+  nigerianSpecific: string;
   statementMonths: number;
 };
 

@@ -98,12 +98,12 @@ export async function GET(request: NextRequest) {
     }
 
     const formattedRule = {
-  ...rule,
-  nigeriaSpecific: rule.nigerianSpecific
-};
+      ...rule,
+      nigerianSpecific: rule.nigerianSpecific,
+    };
 
     const calculation = calculatePof({
-      rule:formattedRule,
+      rule: formattedRule,
       fxRate,
       intakeDate,
       intakeMonths: studyIntakes,
@@ -153,7 +153,7 @@ export async function GET(request: NextRequest) {
         rule: {
           ...rule,
           analysisText: interpolateAnalysis,
-          nigeriaSpecific: interpolatedNigerianSpecific,
+          nigerianSpecific: interpolatedNigerianSpecific,
         },
         calculation,
         fxRate,
