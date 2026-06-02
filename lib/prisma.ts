@@ -33,13 +33,13 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
-// 1. Initialize a clean configuration object with proper formatting
+
 const isDev = process.env.NODE_ENV === "development";
 const logConfig: ("query" | "error" | "warn")[] = isDev
   ? ["query", "error", "warn"]
   : ["error"];
 
-// 2. Define the exact structure Prisma expects so TypeScript stays happy
+
 let adapterInstance: PrismaPg | undefined = undefined;
 
 if (process.env.DATABASE_URL) {
@@ -47,7 +47,7 @@ if (process.env.DATABASE_URL) {
   adapterInstance = new PrismaPg(pool);
 }
 
-// 3. Pass clean, explicitly structured arguments directly into the constructor
+
 export const prisma =
   globalForPrisma.prisma ??
   new PrismaClient({
