@@ -57,9 +57,9 @@ const TEASER_DATA: Record<
     string,
     {
       minAmount: number;
-      bufferMonths: number;
-      cautionMonths: number;
-      riskyMonths: number;
+      safeMonthsBeforeIntake: number;
+      cautionMonthsBeforeIntake: number;
+      riskyMonthsBeforeIntake: number;
       requiresHistory: boolean;
       teaserNote: string;
     }
@@ -68,54 +68,54 @@ const TEASER_DATA: Record<
   gb: {
     study: {
       minAmount: 12006,
-      bufferMonths: 3,
-      cautionMonths: 2,
-      riskyMonths: 1,
+      safeMonthsBeforeIntake: 3,
+      cautionMonthsBeforeIntake: 2,
+      riskyMonthsBeforeIntake: 1,
       requiresHistory: true,
       teaserNote:
         "UKVI requires funds held for 28 consecutive days. Nigerian applicants need a 90-day buffer for FX sourcing.",
     },
     visit: {
       minAmount: 3000,
-      bufferMonths: 3,
-      cautionMonths: 2,
-      riskyMonths: 1,
+      safeMonthsBeforeIntake: 3,
+      cautionMonthsBeforeIntake: 2,
+      riskyMonthsBeforeIntake: 1,
       requiresHistory: false,
       teaserNote:
         "UK visit visa refusal rates for Nigerians are high. A clean 6-month statement matters more than balance size.",
     },
     work: {
       minAmount: 2500,
-      bufferMonths: 2,
-      cautionMonths: 1,
-      riskyMonths: 1,
+      safeMonthsBeforeIntake: 2,
+      cautionMonthsBeforeIntake: 1,
+      riskyMonthsBeforeIntake: 1,
       requiresHistory: false,
       teaserNote:
         "UK Skilled Worker visa requires employer sponsorship. Personal maintenance funds needed for settlement period.",
     },
     tourism: {
       minAmount: 2000,
-      bufferMonths: 3,
-      cautionMonths: 2,
-      riskyMonths: 1,
+      safeMonthsBeforeIntake: 3,
+      cautionMonthsBeforeIntake: 2,
+      riskyMonthsBeforeIntake: 1,
       requiresHistory: false,
       teaserNote:
         "Same route as UK visit visa. Show genuine tourism intent and strong ties to Nigeria.",
     },
     business: {
       minAmount: 2000,
-      bufferMonths: 2,
-      cautionMonths: 1,
-      riskyMonths: 1,
+      safeMonthsBeforeIntake: 2,
+      cautionMonthsBeforeIntake: 1,
+      riskyMonthsBeforeIntake: 1,
       requiresHistory: false,
       teaserNote:
         "UK business visitor visa requires invitation letter from a UK company.",
     },
     "permanent-residency": {
       minAmount: 3000,
-      bufferMonths: 6,
-      cautionMonths: 3,
-      riskyMonths: 1,
+      safeMonthsBeforeIntake: 6,
+      cautionMonthsBeforeIntake: 3,
+      riskyMonthsBeforeIntake: 1,
       requiresHistory: true,
       teaserNote:
         "ILR requires 12 months of clean financial history. Start preparation well in advance.",
@@ -124,53 +124,53 @@ const TEASER_DATA: Record<
   us: {
     study: {
       minAmount: 35000,
-      bufferMonths: 6,
-      cautionMonths: 4,
-      riskyMonths: 2,
+      safeMonthsBeforeIntake: 6,
+      cautionMonthsBeforeIntake: 4,
+      riskyMonthsBeforeIntake: 2,
       requiresHistory: true,
       teaserNote:
         "F-1 visa requires POF before your university issues the I-20. Start 6 months before your intake.",
     },
     visit: {
       minAmount: 3000,
-      bufferMonths: 3,
-      cautionMonths: 2,
-      riskyMonths: 1,
+      safeMonthsBeforeIntake: 3,
+      cautionMonthsBeforeIntake: 2,
+      riskyMonthsBeforeIntake: 1,
       requiresHistory: false,
       teaserNote:
         "B-2 visa has high refusal rates for Nigerians. Show strong ties to Nigeria.",
     },
     work: {
       minAmount: 5000,
-      bufferMonths: 3,
-      cautionMonths: 2,
-      riskyMonths: 1,
+      safeMonthsBeforeIntake: 3,
+      cautionMonthsBeforeIntake: 2,
+      riskyMonthsBeforeIntake: 1,
       requiresHistory: false,
       teaserNote:
         "H-1B requires employer sponsorship and lottery selection. O-1 has no cap.",
     },
     tourism: {
       minAmount: 3000,
-      bufferMonths: 3,
-      cautionMonths: 2,
-      riskyMonths: 1,
+      safeMonthsBeforeIntake: 3,
+      cautionMonthsBeforeIntake: 2,
+      riskyMonthsBeforeIntake: 1,
       requiresHistory: false,
       teaserNote:
         "Same B-2 route as visit visa. Apply 3-4 months before intended travel.",
     },
     business: {
       minAmount: 4000,
-      bufferMonths: 2,
-      cautionMonths: 1,
-      riskyMonths: 1,
+      safeMonthsBeforeIntake: 2,
+      cautionMonthsBeforeIntake: 1,
+      riskyMonthsBeforeIntake: 1,
       requiresHistory: false,
       teaserNote: "B-1 business visa. No working for pay permitted in the US.",
     },
     "permanent-residency": {
       minAmount: 15000,
-      bufferMonths: 6,
-      cautionMonths: 3,
-      riskyMonths: 1,
+      safeMonthsBeforeIntake: 6,
+      cautionMonthsBeforeIntake: 3,
+      riskyMonthsBeforeIntake: 1,
       requiresHistory: true,
       teaserNote:
         "Green Card sponsor must show 125% of federal poverty level. USCIS processing takes 12-36 months.",
@@ -179,52 +179,52 @@ const TEASER_DATA: Record<
   ca: {
     study: {
       minAmount: 20635,
-      bufferMonths: 6,
-      cautionMonths: 4,
-      riskyMonths: 2,
+      safeMonthsBeforeIntake: 6,
+      cautionMonthsBeforeIntake: 4,
+      riskyMonthsBeforeIntake: 2,
       requiresHistory: true,
       teaserNote:
         "IRCC scrutinises Nigerian applications for account dumping. Build organic history over 6 months.",
     },
     visit: {
       minAmount: 3000,
-      bufferMonths: 3,
-      cautionMonths: 2,
-      riskyMonths: 1,
+      safeMonthsBeforeIntake: 3,
+      cautionMonthsBeforeIntake: 2,
+      riskyMonthsBeforeIntake: 1,
       requiresHistory: false,
       teaserNote:
         "Canada TRV has high refusal rate for Nigerians. Extensive documentation required.",
     },
     work: {
       minAmount: 5000,
-      bufferMonths: 3,
-      cautionMonths: 2,
-      riskyMonths: 1,
+      safeMonthsBeforeIntake: 3,
+      cautionMonthsBeforeIntake: 2,
+      riskyMonthsBeforeIntake: 1,
       requiresHistory: false,
       teaserNote: "LMIA from employer required for most work permits.",
     },
     tourism: {
       minAmount: 3000,
-      bufferMonths: 3,
-      cautionMonths: 2,
-      riskyMonths: 1,
+      safeMonthsBeforeIntake: 3,
+      cautionMonthsBeforeIntake: 2,
+      riskyMonthsBeforeIntake: 1,
       requiresHistory: false,
       teaserNote: "Same TRV route as visit visa.",
     },
     business: {
       minAmount: 4000,
-      bufferMonths: 2,
-      cautionMonths: 1,
-      riskyMonths: 1,
+      safeMonthsBeforeIntake: 2,
+      cautionMonthsBeforeIntake: 1,
+      riskyMonthsBeforeIntake: 1,
       requiresHistory: false,
       teaserNote:
         "Show clear business purpose and invitation from Canadian company.",
     },
     "permanent-residency": {
       minAmount: 13757,
-      bufferMonths: 6,
-      cautionMonths: 3,
-      riskyMonths: 1,
+      safeMonthsBeforeIntake: 6,
+      cautionMonthsBeforeIntake: 3,
+      riskyMonthsBeforeIntake: 1,
       requiresHistory: true,
       teaserNote:
         "Express Entry draws happen every 2 weeks. Maintain funds year-round.",
@@ -233,52 +233,52 @@ const TEASER_DATA: Record<
   au: {
     study: {
       minAmount: 29710,
-      bufferMonths: 5,
-      cautionMonths: 3,
-      riskyMonths: 1,
+      safeMonthsBeforeIntake: 5,
+      cautionMonthsBeforeIntake: 3,
+      riskyMonthsBeforeIntake: 1,
       requiresHistory: true,
       teaserNote:
         "DHA checks for genuine savings. GTE statement must explain intent to return to Nigeria.",
     },
     visit: {
       minAmount: 5000,
-      bufferMonths: 3,
-      cautionMonths: 2,
-      riskyMonths: 1,
+      safeMonthsBeforeIntake: 3,
+      cautionMonthsBeforeIntake: 2,
+      riskyMonthsBeforeIntake: 1,
       requiresHistory: false,
       teaserNote:
         "Subclass 600 visitor visa. Show return flight and hotel booking.",
     },
     work: {
       minAmount: 5000,
-      bufferMonths: 3,
-      cautionMonths: 2,
-      riskyMonths: 1,
+      safeMonthsBeforeIntake: 3,
+      cautionMonthsBeforeIntake: 2,
+      riskyMonthsBeforeIntake: 1,
       requiresHistory: false,
       teaserNote: "TSS Subclass 482 requires employer sponsorship.",
     },
     tourism: {
       minAmount: 5000,
-      bufferMonths: 3,
-      cautionMonths: 2,
-      riskyMonths: 1,
+      safeMonthsBeforeIntake: 3,
+      cautionMonthsBeforeIntake: 2,
+      riskyMonthsBeforeIntake: 1,
       requiresHistory: false,
       teaserNote: "Same Subclass 600 route as visit visa.",
     },
     business: {
       minAmount: 3000,
-      bufferMonths: 2,
-      cautionMonths: 1,
-      riskyMonths: 1,
+      safeMonthsBeforeIntake: 2,
+      cautionMonthsBeforeIntake: 1,
+      riskyMonthsBeforeIntake: 1,
       requiresHistory: false,
       teaserNote:
         "Subclass 600 business stream. ETA not available for Nigerians.",
     },
     "permanent-residency": {
       minAmount: 10000,
-      bufferMonths: 6,
-      cautionMonths: 3,
-      riskyMonths: 1,
+      safeMonthsBeforeIntake: 6,
+      cautionMonthsBeforeIntake: 3,
+      riskyMonthsBeforeIntake: 1,
       requiresHistory: true,
       teaserNote:
         "SkillSelect points-based system. 65 points minimum required.",
@@ -287,52 +287,52 @@ const TEASER_DATA: Record<
   nl: {
     study: {
       minAmount: 13200,
-      bufferMonths: 4,
-      cautionMonths: 2,
-      riskyMonths: 1,
+      safeMonthsBeforeIntake: 4,
+      cautionMonthsBeforeIntake: 2,
+      riskyMonthsBeforeIntake: 1,
       requiresHistory: false,
       teaserNote:
         "IND requires funds in your personal account only — not family accounts.",
     },
     visit: {
       minAmount: 840,
-      bufferMonths: 2,
-      cautionMonths: 1,
-      riskyMonths: 1,
+      safeMonthsBeforeIntake: 2,
+      cautionMonthsBeforeIntake: 1,
+      riskyMonthsBeforeIntake: 1,
       requiresHistory: false,
       teaserNote:
         "Schengen visa €70/day. Show accommodation and return flight.",
     },
     work: {
       minAmount: 2500,
-      bufferMonths: 2,
-      cautionMonths: 1,
-      riskyMonths: 1,
+      safeMonthsBeforeIntake: 2,
+      cautionMonthsBeforeIntake: 1,
+      riskyMonthsBeforeIntake: 1,
       requiresHistory: false,
       teaserNote:
         "TWV work permit employer-led. Highly Skilled Migrant route available.",
     },
     tourism: {
       minAmount: 840,
-      bufferMonths: 2,
-      cautionMonths: 1,
-      riskyMonths: 1,
+      safeMonthsBeforeIntake: 2,
+      cautionMonthsBeforeIntake: 1,
+      riskyMonthsBeforeIntake: 1,
       requiresHistory: false,
       teaserNote: "Schengen short-stay visa. Apply at VFS Netherlands Lagos.",
     },
     business: {
       minAmount: 1500,
-      bufferMonths: 2,
-      cautionMonths: 1,
-      riskyMonths: 1,
+      safeMonthsBeforeIntake: 2,
+      cautionMonthsBeforeIntake: 1,
+      riskyMonthsBeforeIntake: 1,
       requiresHistory: false,
       teaserNote: "Schengen business visa. 90/180 day rule applies.",
     },
     "permanent-residency": {
       minAmount: 3000,
-      bufferMonths: 6,
-      cautionMonths: 3,
-      riskyMonths: 1,
+      safeMonthsBeforeIntake: 6,
+      cautionMonthsBeforeIntake: 3,
+      riskyMonthsBeforeIntake: 1,
       requiresHistory: true,
       teaserNote: "5 years residence + NT2 Dutch language exam required.",
     },
@@ -340,51 +340,51 @@ const TEASER_DATA: Record<
   fr: {
     study: {
       minAmount: 7380,
-      bufferMonths: 4,
-      cautionMonths: 2,
-      riskyMonths: 1,
+      safeMonthsBeforeIntake: 4,
+      cautionMonthsBeforeIntake: 2,
+      riskyMonthsBeforeIntake: 1,
       requiresHistory: false,
       teaserNote:
         "Campus France registration mandatory before consulate appointment.",
     },
     visit: {
       minAmount: 840,
-      bufferMonths: 2,
-      cautionMonths: 1,
-      riskyMonths: 1,
+      safeMonthsBeforeIntake: 2,
+      cautionMonthsBeforeIntake: 1,
+      riskyMonthsBeforeIntake: 1,
       requiresHistory: false,
       teaserNote: "Schengen visa. Apply at VFS France Nigeria.",
     },
     work: {
       minAmount: 2000,
-      bufferMonths: 2,
-      cautionMonths: 1,
-      riskyMonths: 1,
+      safeMonthsBeforeIntake: 2,
+      cautionMonthsBeforeIntake: 1,
+      riskyMonthsBeforeIntake: 1,
       requiresHistory: false,
       teaserNote: "OFII medical exam required upon arrival in France.",
     },
     tourism: {
       minAmount: 840,
-      bufferMonths: 2,
-      cautionMonths: 1,
-      riskyMonths: 1,
+      safeMonthsBeforeIntake: 2,
+      cautionMonthsBeforeIntake: 1,
+      riskyMonthsBeforeIntake: 1,
       requiresHistory: false,
       teaserNote: "July-August: longest Schengen processing times.",
     },
     business: {
       minAmount: 1500,
-      bufferMonths: 2,
-      cautionMonths: 1,
-      riskyMonths: 1,
+      safeMonthsBeforeIntake: 2,
+      cautionMonthsBeforeIntake: 1,
+      riskyMonthsBeforeIntake: 1,
       requiresHistory: false,
       teaserNote:
         "Schengen business visa. Invitation from French company required.",
     },
     "permanent-residency": {
       minAmount: 3000,
-      bufferMonths: 6,
-      cautionMonths: 3,
-      riskyMonths: 1,
+      safeMonthsBeforeIntake: 6,
+      cautionMonthsBeforeIntake: 3,
+      riskyMonthsBeforeIntake: 1,
       requiresHistory: true,
       teaserNote:
         "Carte de Résident after 5 years. B1 French level recommended.",
@@ -393,49 +393,49 @@ const TEASER_DATA: Record<
   se: {
     study: {
       minAmount: 102816,
-      bufferMonths: 4,
-      cautionMonths: 2,
-      riskyMonths: 1,
+      safeMonthsBeforeIntake: 4,
+      cautionMonthsBeforeIntake: 2,
+      riskyMonthsBeforeIntake: 1,
       requiresHistory: false,
       teaserNote: "Apply via Migrationsverket portal. Processing 2-4 months.",
     },
     visit: {
       minAmount: 840,
-      bufferMonths: 2,
-      cautionMonths: 1,
-      riskyMonths: 1,
+      safeMonthsBeforeIntake: 2,
+      cautionMonthsBeforeIntake: 1,
+      riskyMonthsBeforeIntake: 1,
       requiresHistory: false,
       teaserNote: "Schengen visa through VFS Sweden Nigeria.",
     },
     work: {
       minAmount: 1800,
-      bufferMonths: 2,
-      cautionMonths: 1,
-      riskyMonths: 1,
+      safeMonthsBeforeIntake: 2,
+      cautionMonthsBeforeIntake: 1,
+      riskyMonthsBeforeIntake: 1,
       requiresHistory: false,
       teaserNote: "Employer must advertise role in EU first.",
     },
     tourism: {
       minAmount: 840,
-      bufferMonths: 2,
-      cautionMonths: 1,
-      riskyMonths: 1,
+      safeMonthsBeforeIntake: 2,
+      cautionMonthsBeforeIntake: 1,
+      riskyMonthsBeforeIntake: 1,
       requiresHistory: false,
       teaserNote: "Apply early for summer travel to Sweden.",
     },
     business: {
       minAmount: 1200,
-      bufferMonths: 2,
-      cautionMonths: 1,
-      riskyMonths: 1,
+      safeMonthsBeforeIntake: 2,
+      cautionMonthsBeforeIntake: 1,
+      riskyMonthsBeforeIntake: 1,
       requiresHistory: false,
       teaserNote: "Schengen 90/180 rule applies.",
     },
     "permanent-residency": {
       minAmount: 2500,
-      bufferMonths: 6,
-      cautionMonths: 3,
-      riskyMonths: 1,
+      safeMonthsBeforeIntake: 6,
+      cautionMonthsBeforeIntake: 3,
+      riskyMonthsBeforeIntake: 1,
       requiresHistory: true,
       teaserNote: "4 years work permit = eligible for PR.",
     },
@@ -443,50 +443,50 @@ const TEASER_DATA: Record<
   fi: {
     study: {
       minAmount: 6720,
-      bufferMonths: 4,
-      cautionMonths: 2,
-      riskyMonths: 1,
+      safeMonthsBeforeIntake: 4,
+      cautionMonthsBeforeIntake: 2,
+      riskyMonthsBeforeIntake: 1,
       requiresHistory: false,
       teaserNote: "Apply through Enter Finland portal. Processing 1-3 months.",
     },
     visit: {
       minAmount: 840,
-      bufferMonths: 2,
-      cautionMonths: 1,
-      riskyMonths: 1,
+      safeMonthsBeforeIntake: 2,
+      cautionMonthsBeforeIntake: 1,
+      riskyMonthsBeforeIntake: 1,
       requiresHistory: false,
       teaserNote:
         "Popular for Northern Lights tourism. Apply early for Jan/Feb.",
     },
     work: {
       minAmount: 1800,
-      bufferMonths: 2,
-      cautionMonths: 1,
-      riskyMonths: 1,
+      safeMonthsBeforeIntake: 2,
+      cautionMonthsBeforeIntake: 1,
+      riskyMonthsBeforeIntake: 1,
       requiresHistory: false,
       teaserNote: "Finland has shortage of tech, healthcare workers.",
     },
     tourism: {
       minAmount: 840,
-      bufferMonths: 2,
-      cautionMonths: 1,
-      riskyMonths: 1,
+      safeMonthsBeforeIntake: 2,
+      cautionMonthsBeforeIntake: 1,
+      riskyMonthsBeforeIntake: 1,
       requiresHistory: false,
       teaserNote: "Schengen visa. Biometrics at VFS Helsinki in Nigeria.",
     },
     business: {
       minAmount: 1200,
-      bufferMonths: 2,
-      cautionMonths: 1,
-      riskyMonths: 1,
+      safeMonthsBeforeIntake: 2,
+      cautionMonthsBeforeIntake: 1,
+      riskyMonthsBeforeIntake: 1,
       requiresHistory: false,
       teaserNote: "Schengen 90/180 rule applies.",
     },
     "permanent-residency": {
       minAmount: 2500,
-      bufferMonths: 6,
-      cautionMonths: 3,
-      riskyMonths: 1,
+      safeMonthsBeforeIntake: 6,
+      cautionMonthsBeforeIntake: 3,
+      riskyMonthsBeforeIntake: 1,
       requiresHistory: true,
       teaserNote: "4 years continuous lawful stay required.",
     },
@@ -494,50 +494,50 @@ const TEASER_DATA: Record<
   mt: {
     study: {
       minAmount: 7800,
-      bufferMonths: 3,
-      cautionMonths: 2,
-      riskyMonths: 1,
+      safeMonthsBeforeIntake: 3,
+      cautionMonthsBeforeIntake: 2,
+      riskyMonthsBeforeIntake: 1,
       requiresHistory: false,
       teaserNote:
         "Identity Malta Agency handles permits. English medium of instruction.",
     },
     visit: {
       minAmount: 840,
-      bufferMonths: 2,
-      cautionMonths: 1,
-      riskyMonths: 1,
+      safeMonthsBeforeIntake: 2,
+      cautionMonthsBeforeIntake: 1,
+      riskyMonthsBeforeIntake: 1,
       requiresHistory: false,
       teaserNote: "Malta Schengen visa. Popular for summer beach tourism.",
     },
     work: {
       minAmount: 1500,
-      bufferMonths: 2,
-      cautionMonths: 1,
-      riskyMonths: 1,
+      safeMonthsBeforeIntake: 2,
+      cautionMonthsBeforeIntake: 1,
+      riskyMonthsBeforeIntake: 1,
       requiresHistory: false,
       teaserNote: "iGaming, hospitality, financial services growing in Malta.",
     },
     tourism: {
       minAmount: 840,
-      bufferMonths: 2,
-      cautionMonths: 1,
-      riskyMonths: 1,
+      safeMonthsBeforeIntake: 2,
+      cautionMonthsBeforeIntake: 1,
+      riskyMonthsBeforeIntake: 1,
       requiresHistory: false,
       teaserNote: "Valletta is UNESCO World Heritage site.",
     },
     business: {
       minAmount: 1200,
-      bufferMonths: 2,
-      cautionMonths: 1,
-      riskyMonths: 1,
+      safeMonthsBeforeIntake: 2,
+      cautionMonthsBeforeIntake: 1,
+      riskyMonthsBeforeIntake: 1,
       requiresHistory: false,
       teaserNote: "Strong fintech sector in Malta.",
     },
     "permanent-residency": {
       minAmount: 2000,
-      bufferMonths: 6,
-      cautionMonths: 3,
-      riskyMonths: 1,
+      safeMonthsBeforeIntake: 6,
+      cautionMonthsBeforeIntake: 3,
+      riskyMonthsBeforeIntake: 1,
       requiresHistory: true,
       teaserNote:
         "MPRP requires significant investment. 5-year standard route available.",
@@ -546,51 +546,51 @@ const TEASER_DATA: Record<
   es: {
     study: {
       minAmount: 7200,
-      bufferMonths: 4,
-      cautionMonths: 2,
-      riskyMonths: 1,
+      safeMonthsBeforeIntake: 4,
+      cautionMonthsBeforeIntake: 2,
+      riskyMonthsBeforeIntake: 1,
       requiresHistory: false,
       teaserNote:
         "All Nigerian documents must be apostilled. August: Spanish admin closed.",
     },
     visit: {
       minAmount: 840,
-      bufferMonths: 2,
-      cautionMonths: 1,
-      riskyMonths: 1,
+      safeMonthsBeforeIntake: 2,
+      cautionMonthsBeforeIntake: 1,
+      riskyMonthsBeforeIntake: 1,
       requiresHistory: false,
       teaserNote:
         "Spain popular for beach holidays. Processing: 15 calendar days.",
     },
     work: {
       minAmount: 1800,
-      bufferMonths: 2,
-      cautionMonths: 1,
-      riskyMonths: 1,
+      safeMonthsBeforeIntake: 2,
+      cautionMonthsBeforeIntake: 1,
+      riskyMonthsBeforeIntake: 1,
       requiresHistory: false,
       teaserNote: "Digital Nomad Visa: €2,160/month income required.",
     },
     tourism: {
       minAmount: 840,
-      bufferMonths: 2,
-      cautionMonths: 1,
-      riskyMonths: 1,
+      safeMonthsBeforeIntake: 2,
+      cautionMonthsBeforeIntake: 1,
+      riskyMonthsBeforeIntake: 1,
       requiresHistory: false,
       teaserNote: "Avoid July-August applications — peak processing times.",
     },
     business: {
       minAmount: 1500,
-      bufferMonths: 2,
-      cautionMonths: 1,
-      riskyMonths: 1,
+      safeMonthsBeforeIntake: 2,
+      cautionMonthsBeforeIntake: 1,
+      riskyMonthsBeforeIntake: 1,
       requiresHistory: false,
       teaserNote: "August: avoid — Spanish offices closed for vacaciones.",
     },
     "permanent-residency": {
       minAmount: 2500,
-      bufferMonths: 6,
-      cautionMonths: 3,
-      riskyMonths: 1,
+      safeMonthsBeforeIntake: 6,
+      cautionMonthsBeforeIntake: 3,
+      riskyMonthsBeforeIntake: 1,
       requiresHistory: true,
       teaserNote: "5 years residence + DELE A2 Spanish language test required.",
     },
@@ -622,31 +622,40 @@ function formatNaira(amount: number) {
 
 // function getStatusForMonth(
 //   monthsFromNow: number,
-//   bufferMonths: number,
-//   cautionMonths: number,
-//   riskyMonths: number,
+//   safeMonthsBeforeIntake: number,
+//   cautionMonthsBeforeIntake: number,
+//   riskyMonthsBeforeIntake: number,
 // ): "safe" | "caution" | "risky" {
-//   const monthsToIntake = bufferMonths - monthsFromNow;
-//   if (monthsToIntake >= bufferMonths) return "safe";
-//   if (monthsToIntake >= cautionMonths) return "caution";
+//   const monthsToIntake = safeMonthsBeforeIntake - monthsFromNow;
+//   if (monthsToIntake >= safeMonthsBeforeIntake) return "safe";
+//   if (monthsToIntake >= cautionMonthsBeforeIntake) return "caution";
 //   return "risky";
 // }
 
 function getTimelineStatus(
   monthsRemaining: number,
   safeMonths: number,
-  cautionMonths: number,
-  riskyMonths: number,
+  cautionMonthsBeforeIntake: number,
+  riskyMonthsBeforeIntake: number,
 ): "safe" | "caution" | "risky" {
   if (monthsRemaining >= safeMonths) {
     return "safe";
   }
 
-  if (monthsRemaining >= cautionMonths) {
+  if (monthsRemaining >= cautionMonthsBeforeIntake) {
     return "caution";
   }
 
   return "risky";
+}
+
+function getMonthsUntilIntake(intakeDate: Date) {
+  const now = new Date();
+
+  return (
+    (intakeDate.getFullYear() - now.getFullYear()) * 12 +
+    (intakeDate.getMonth() - now.getMonth())
+  );
 }
 
 // ─────────────────────────────────────────
@@ -668,12 +677,28 @@ const MONTH_NAMES = [
   "Dec",
 ];
 
-const INTAKE_OPTIONS = [
-  { value: "2026-09", label: "September 2026" },
-  { value: "2027-01", label: "January 2027" },
-  { value: "2027-05", label: "May 2027" },
-  { value: "2027-09", label: "September 2027" },
-  { value: "2028-01", label: "January 2028" },
+const INTAKE_MONTHS = [
+  { value: "0", label: "January" },
+  { value: "1", label: "February" },
+  { value: "2", label: "March" },
+  { value: "3", label: "April" },
+  { value: "4", label: "May" },
+  { value: "5", label: "June" },
+  { value: "6", label: "July" },
+  { value: "7", label: "August" },
+  { value: "8", label: "September" },
+  { value: "9", label: "October" },
+  { value: "10", label: "November" },
+  { value: "11", label: "December" },
+];
+
+const CURRENT_YEAR = new Date().getFullYear();
+
+const INTAKE_YEARS = [
+  CURRENT_YEAR,
+  CURRENT_YEAR + 1,
+  CURRENT_YEAR + 2,
+  CURRENT_YEAR + 3,
 ];
 
 // ─────────────────────────────────────────
@@ -684,7 +709,9 @@ export default function CalculatorPage() {
   const router = useRouter();
   const [selectedCountry, setSelectedCountry] = useState("");
   const [selectedPurpose, setSelectedPurpose] = useState("");
-  const [selectedIntakeDate, setSelectedIntakeDate] = useState("");
+
+  const [intakeMonth, setIntakeMonth] = useState("");
+  const [intakeYear, setIntakeYear] = useState("");
   const [showTeaser, setShowTeaser] = useState(false);
 
   const country = COUNTRIES.find((c) => c.id === selectedCountry);
@@ -699,20 +726,19 @@ export default function CalculatorPage() {
 
   const currentMonthIndex = new Date().getMonth();
 
-  const monthsUntilIntake = selectedIntakeDate
-    ? (() => {
-        const today = new Date();
+  const intakeDate =
+    intakeMonth && intakeYear
+      ? new Date(Number(intakeYear), Number(intakeMonth), 1)
+      : null;
 
-        const [year, month] = selectedIntakeDate.split("-").map(Number);
-
-        return (
-          (year - today.getFullYear()) * 12 + (month - 1 - today.getMonth())
-        );
-      })()
-    : null;
+  const monthsRemaining = intakeDate ? getMonthsUntilIntake(intakeDate) : null;
 
   function handleGenerate() {
-    if (!selectedCountry || !selectedPurpose || !selectedIntakeDate) return;
+    if (!selectedCountry || !selectedPurpose) return;
+
+    if (selectedPurpose === "study") {
+      if (!intakeMonth || !intakeYear) return;
+    }
     setShowTeaser(true);
   }
 
@@ -744,12 +770,11 @@ export default function CalculatorPage() {
             Free POF Calculator
           </Badge>
           <h1 className="text-3xl md:text-4xl font-bold">
-            Calculate Your Visa Proof of Funds
+            Know Exactly When To Start Building Your Proof Of Funds
           </h1>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            Select your destination and visa purpose to see your exact Naira
-            target and preparation timeline — based on real parallel market
-            rates.
+            Get your target amount, preparation timeline, and lump-sum risk
+            assessment in under 30 seconds.
           </p>
         </div>
 
@@ -762,7 +787,7 @@ export default function CalculatorPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Country */}
               <div className="space-y-2">
                 <label className="text-sm font-semibold">
@@ -810,37 +835,54 @@ export default function CalculatorPage() {
                   </SelectContent>
                 </Select>
               </div>
-
-              {/* Intake Date */}
-              <div className="space-y-2">
-                <label className="text-sm font-semibold">Planned Intake</label>
-
-                <Select
-                  value={selectedIntakeDate}
-                  onValueChange={(val) => {
-                    setSelectedIntakeDate(val);
-                    setShowTeaser(false);
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select Intake..." />
-                  </SelectTrigger>
-
-                  <SelectContent>
-                    {INTAKE_OPTIONS.map((intake) => (
-                      <SelectItem key={intake.value} value={intake.value}>
-                        {intake.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
             </div>
+
+            {selectedPurpose === "study" && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold">Intake Month</label>
+
+                  <Select value={intakeMonth} onValueChange={setIntakeMonth}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select intake month" />
+                    </SelectTrigger>
+
+                    <SelectContent>
+                      {INTAKE_MONTHS.map((month) => (
+                        <SelectItem key={month.value} value={month.value}>
+                          {month.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold">Intake Year</label>
+
+                  <Select value={intakeYear} onValueChange={setIntakeYear}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select intake year" />
+                    </SelectTrigger>
+
+                    <SelectContent>
+                      {INTAKE_YEARS.map((year) => (
+                        <SelectItem key={year} value={year.toString()}>
+                          {year}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
 
             <Button
               onClick={handleGenerate}
               disabled={
-                !selectedCountry || !selectedPurpose || !selectedIntakeDate
+                !selectedCountry ||
+                !selectedPurpose ||
+                (selectedPurpose === "study" && (!intakeMonth || !intakeYear))
               }
               className="w-full"
               size="lg"
@@ -855,7 +897,7 @@ export default function CalculatorPage() {
         {showTeaser && teaser && country && fx && (
           <div className="space-y-6">
             {/* FX snapshot */}
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <Card className="border-primary/20 bg-primary/5">
                 <CardContent className="p-4">
                   <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">
@@ -888,6 +930,25 @@ export default function CalculatorPage() {
               </Card>
             </div>
 
+            {selectedPurpose === "study" && monthsRemaining !== null && (
+              <Card className="border-primary/20 bg-primary/5">
+                <CardContent className="p-4">
+                  <p className="text-sm font-medium">Intake selected:</p>
+
+                  <p className="text-2xl font-bold mt-1">
+                    {INTAKE_MONTHS.find((m) => m.value === intakeMonth)?.label}{" "}
+                    {intakeYear}
+                  </p>
+
+                  <p className="text-muted-foreground text-sm mt-2">
+                    {monthsRemaining} month
+                    {monthsRemaining !== 1 ? "s" : ""} remaining before your
+                    intake.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Teaser note */}
             <Card className="border-border">
               <CardContent className="p-4 flex gap-3">
@@ -909,16 +970,32 @@ export default function CalculatorPage() {
               </h2>
               <div className="grid grid-cols-4 md:grid-cols-6 gap-2">
                 {MONTH_NAMES.map((month, i) => {
-                  const monthsRemaining =
-                    (monthsUntilIntake ?? 0) - i >= currentMonthIndex
-                      ? i - currentMonthIndex
-                      : 12 - currentMonthIndex + i;
+                  // const monthsRemaining =
+                  //   (monthsUntilIntake ?? 0) - i >= currentMonthIndex
+                  //     ? i - currentMonthIndex
+                  //     : 12 - currentMonthIndex + i;
+                  // const status = getTimelineStatus(
+                  //   monthsRemaining,
+                  //   teaser.safeMonthsBeforeIntake,
+                  //   teaser.cautionMonthsBeforeIntake,
+                  //   teaser.riskyMonthsBeforeIntake,
+                  // );
+
+                  const intakeIndex = Number(intakeMonth);
+
+                  let distanceToIntake = intakeIndex - i;
+
+                  if (distanceToIntake < 0) {
+                    distanceToIntake += 12;
+                  }
+
                   const status = getTimelineStatus(
-                    monthsRemaining,
-                    teaser.bufferMonths,
-                    teaser.cautionMonths,
-                    teaser.riskyMonths,
+                    distanceToIntake,
+                    teaser.safeMonthsBeforeIntake,
+                    teaser.cautionMonthsBeforeIntake,
+                    teaser.riskyMonthsBeforeIntake,
                   );
+
                   const isCurrentMonth = i === currentMonthIndex;
 
                   return (
@@ -989,15 +1066,16 @@ export default function CalculatorPage() {
             {teaser.requiresHistory && (
               <Card className="border-red-200 bg-red-50 dark:bg-red-950/20">
                 <CardContent className="p-4 flex gap-3">
-                  <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                  <AlertTriangle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
                   <div>
                     <p className="text-sm font-bold text-red-700 dark:text-red-400 mb-1">
                       Lump Sum Risk — Account History Required
                     </p>
                     <p className="text-sm text-red-600 dark:text-red-500">
                       This embassy actively checks for sudden large deposits.
-                      You need {teaser.bufferMonths}+ months of organic account
-                      history. A last-minute lump sum will trigger a rejection.
+                      You need {teaser.safeMonthsBeforeIntake}+ months of
+                      organic account history. A last-minute lump sum will
+                      trigger a rejection.
                     </p>
                   </div>
                 </CardContent>
@@ -1005,7 +1083,7 @@ export default function CalculatorPage() {
             )}
 
             {/* Gate — Sign up CTA */}
-            <Card className="border-primary/30 bg-foreground">
+            <Card className="border-primary/30 bg-foreground text-background">
               <CardContent className="p-8 text-center space-y-4">
                 <div className="flex justify-center gap-3 mb-2">
                   <TrendingUp className="w-6 h-6 text-primary" />
