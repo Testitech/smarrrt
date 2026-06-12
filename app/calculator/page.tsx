@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,6 +20,7 @@ import {
   AlertTriangle,
   CheckCircle,
   Clock,
+  CalendarClock,
 } from "lucide-react";
 
 // ─────────────────────────────────────────
@@ -51,20 +52,16 @@ const PURPOSES = [
 ];
 
 // Teaser data — enough to show value, not the full strategy
-const TEASER_DATA: Record<
-  string,
-  Record<
-    string,
-    {
-      minAmount: number;
-      safeMonthsBeforeIntake: number;
-      cautionMonthsBeforeIntake: number;
-      riskyMonthsBeforeIntake: number;
-      requiresHistory: boolean;
-      teaserNote: string;
-    }
-  >
-> = {
+type TeaserEntry = {
+  minAmount: number;
+  safeMonthsBeforeIntake: number;
+  cautionMonthsBeforeIntake: number;
+  riskyMonthsBeforeIntake: number;
+  requiresHistory: boolean;
+  teaserNote: string;
+};
+
+const TEASER_DATA: Record<string, Record<string, TeaserEntry>> = {
   gb: {
     study: {
       minAmount: 12006,
@@ -608,58 +605,7 @@ const FX_RATES: Record<string, { parallel: number; cbn: number }> = {
 };
 
 // ─────────────────────────────────────────
-// HELPERS
-// ─────────────────────────────────────────
-
-function formatNaira(amount: number) {
-  return new Intl.NumberFormat("en-NG", {
-    style: "currency",
-    currency: "NGN",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
-}
-
-// function getStatusForMonth(
-//   monthsFromNow: number,
-//   safeMonthsBeforeIntake: number,
-//   cautionMonthsBeforeIntake: number,
-//   riskyMonthsBeforeIntake: number,
-// ): "safe" | "caution" | "risky" {
-//   const monthsToIntake = safeMonthsBeforeIntake - monthsFromNow;
-//   if (monthsToIntake >= safeMonthsBeforeIntake) return "safe";
-//   if (monthsToIntake >= cautionMonthsBeforeIntake) return "caution";
-//   return "risky";
-// }
-
-function getTimelineStatus(
-  monthsRemaining: number,
-  safeMonths: number,
-  cautionMonthsBeforeIntake: number,
-  riskyMonthsBeforeIntake: number,
-): "safe" | "caution" | "risky" {
-  if (monthsRemaining >= safeMonths) {
-    return "safe";
-  }
-
-  if (monthsRemaining >= cautionMonthsBeforeIntake) {
-    return "caution";
-  }
-
-  return "risky";
-}
-
-function getMonthsUntilIntake(intakeDate: Date) {
-  const now = new Date();
-
-  return (
-    (intakeDate.getFullYear() - now.getFullYear()) * 12 +
-    (intakeDate.getMonth() - now.getMonth())
-  );
-}
-
-// ─────────────────────────────────────────
-// MONTH NAMES
+// CONSTANTS — DATES
 // ─────────────────────────────────────────
 
 const MONTH_NAMES = [
@@ -677,22 +623,29 @@ const MONTH_NAMES = [
   "Dec",
 ];
 
-const INTAKE_MONTHS = [
-  { value: "0", label: "January" },
-  { value: "1", label: "February" },
-  { value: "2", label: "March" },
-  { value: "3", label: "April" },
-  { value: "4", label: "May" },
-  { value: "5", label: "June" },
-  { value: "6", label: "July" },
-  { value: "7", label: "August" },
-  { value: "8", label: "September" },
-  { value: "9", label: "October" },
-  { value: "10", label: "November" },
-  { value: "11", label: "December" },
+const FULL_MONTH_NAMES = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ];
 
-const CURRENT_YEAR = new Date().getFullYear();
+const INTAKE_MONTHS = FULL_MONTH_NAMES.map((label, i) => ({
+  value: String(i),
+  label,
+}));
+
+const NOW = new Date();
+const CURRENT_MONTH_INDEX = NOW.getMonth();
+const CURRENT_YEAR = NOW.getFullYear();
 
 const INTAKE_YEARS = [
   CURRENT_YEAR,
@@ -702,6 +655,78 @@ const INTAKE_YEARS = [
 ];
 
 // ─────────────────────────────────────────
+// HELPERS
+// ─────────────────────────────────────────
+
+function formatNaira(amount: number) {
+  return new Intl.NumberFormat("en-NG", {
+    style: "currency",
+    currency: "NGN",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
+}
+
+function getMonthsUntilIntake(intakeDate: Date) {
+  const now = new Date();
+  return (
+    (intakeDate.getFullYear() - now.getFullYear()) * 12 +
+    (intakeDate.getMonth() - now.getMonth())
+  );
+}
+
+function getTimelineStatus(
+  monthsRemaining: number,
+  safeMonths: number,
+  cautionMonths: number,
+): "safe" | "caution" | "risky" {
+  if (monthsRemaining >= safeMonths) return "safe";
+  if (monthsRemaining >= cautionMonths) return "caution";
+  return "risky";
+}
+
+// Is a given month (0-indexed) in a given year already in the past?
+function isMonthDisabled(monthValue: string, yearValue: string): boolean {
+  if (!yearValue) return false;
+  const year = parseInt(yearValue, 10);
+  const month = parseInt(monthValue, 10);
+  if (year > CURRENT_YEAR) return false;
+  if (year < CURRENT_YEAR) return true;
+  return month < CURRENT_MONTH_INDEX;
+}
+
+// ─────────────────────────────────────────
+// STATUS CONFIG
+// ─────────────────────────────────────────
+
+const STATUS_CONFIG = {
+  safe: {
+    label: "Safe — Good time to start",
+    icon: CheckCircle,
+    className:
+      "border-green-200 bg-green-50 text-green-700 dark:bg-green-950/20 dark:border-green-800 dark:text-green-400",
+    barClass:
+      "bg-green-50 border-green-200 text-green-700 dark:bg-green-950/20 dark:border-green-800 dark:text-green-400",
+  },
+  caution: {
+    label: "Caution — Time is getting tight",
+    icon: Clock,
+    className:
+      "border-yellow-200 bg-yellow-50 text-yellow-700 dark:bg-yellow-950/20 dark:border-yellow-800 dark:text-yellow-400",
+    barClass:
+      "bg-yellow-50 border-yellow-200 text-yellow-700 dark:bg-yellow-950/20 dark:border-yellow-800 dark:text-yellow-400",
+  },
+  risky: {
+    label: "Risky — Very little time left",
+    icon: AlertTriangle,
+    className:
+      "border-red-200 bg-red-50 text-red-700 dark:bg-red-950/20 dark:border-red-800 dark:text-red-400",
+    barClass:
+      "bg-red-50 border-red-200 text-red-700 dark:bg-red-950/20 dark:border-red-800 dark:text-red-400",
+  },
+};
+
+// ─────────────────────────────────────────
 // PAGE
 // ─────────────────────────────────────────
 
@@ -709,7 +734,6 @@ export default function CalculatorPage() {
   const router = useRouter();
   const [selectedCountry, setSelectedCountry] = useState("");
   const [selectedPurpose, setSelectedPurpose] = useState("");
-
   const [intakeMonth, setIntakeMonth] = useState("");
   const [intakeYear, setIntakeYear] = useState("");
   const [showTeaser, setShowTeaser] = useState(false);
@@ -721,25 +745,46 @@ export default function CalculatorPage() {
       : null;
   const fx = country ? FX_RATES[country.currency] : null;
 
-  const nairaTarget =
-    teaser && fx ? Math.ceil(teaser.minAmount * fx.parallel * 1.05) : 0;
-
-  const currentMonthIndex = new Date().getMonth();
-
-  const intakeDate =
-    intakeMonth && intakeYear
-      ? new Date(Number(intakeYear), Number(intakeMonth), 1)
-      : null;
+  // Intake date derived from the two pickers
+  const intakeDate = useMemo(() => {
+    if (!intakeMonth || !intakeYear) return null;
+    return new Date(parseInt(intakeYear, 10), parseInt(intakeMonth, 10), 1);
+  }, [intakeMonth, intakeYear]);
 
   const monthsRemaining = intakeDate ? getMonthsUntilIntake(intakeDate) : null;
 
-  function handleGenerate() {
-    if (!selectedCountry || !selectedPurpose) return;
+  const timelineStatus =
+    teaser && monthsRemaining !== null
+      ? getTimelineStatus(
+          monthsRemaining,
+          teaser.safeMonthsBeforeIntake,
+          teaser.cautionMonthsBeforeIntake,
+        )
+      : null;
 
-    if (selectedPurpose === "study") {
-      if (!intakeMonth || !intakeYear) return;
-    }
+  const nairaTarget =
+    teaser && fx ? Math.ceil(teaser.minAmount * fx.parallel * 1.05) : 0;
+
+  const canGenerate =
+    !!selectedCountry && !!selectedPurpose && !!intakeMonth && !!intakeYear;
+
+  function handleGenerate() {
+    if (!canGenerate) return;
     setShowTeaser(true);
+  }
+
+  function handleMonthChange(val: string) {
+    setIntakeMonth(val);
+    setShowTeaser(false);
+  }
+
+  function handleYearChange(val: string) {
+    setIntakeYear(val);
+    // If the previously selected month is now in the past for this year, clear it
+    if (intakeMonth && isMonthDisabled(intakeMonth, val)) {
+      setIntakeMonth("");
+    }
+    setShowTeaser(false);
   }
 
   return (
@@ -748,12 +793,12 @@ export default function CalculatorPage() {
       <div className="border-b border-border bg-background/95 backdrop-blur sticky top-0 z-40">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-primary shadow-sm">
-              <span className="text-primary-foreground font-black text-lg">
+            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+              <span className="text-primary-foreground font-bold text-sm">
                 Sm
               </span>
             </div>
-            <span className="font-black text-4xl tracking-tight">
+            <span className="font-bold text-lg">
               Sma<span className="text-primary">rrr</span>t
             </span>
           </div>
@@ -770,11 +815,12 @@ export default function CalculatorPage() {
             Free POF Calculator
           </Badge>
           <h1 className="text-3xl md:text-4xl font-bold">
-            Know Exactly When To Start Building Your Proof Of Funds
+            Calculate Your Visa Proof of Funds
           </h1>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            Get your target amount, preparation timeline, and lump-sum risk
-            assessment in under 30 seconds.
+            Select your destination, visa purpose, and intake date to see your
+            exact Naira target and preparation timeline — based on real parallel
+            market rates.
           </p>
         </div>
 
@@ -835,55 +881,61 @@ export default function CalculatorPage() {
                   </SelectContent>
                 </Select>
               </div>
-            </div>
 
-            {selectedPurpose === "study" && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold">Intake Month</label>
-
-                  <Select value={intakeMonth} onValueChange={setIntakeMonth}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select intake month" />
-                    </SelectTrigger>
-
-                    <SelectContent>
-                      {INTAKE_MONTHS.map((month) => (
-                        <SelectItem key={month.value} value={month.value}>
-                          {month.label}
+              {/* Intake Month */}
+              <div className="space-y-2">
+                <label className="text-sm font-semibold">Intake Month</label>
+                <Select
+                  value={intakeMonth}
+                  onValueChange={handleMonthChange}
+                  disabled={!intakeYear}
+                >
+                  <SelectTrigger>
+                    <SelectValue
+                      placeholder={
+                        intakeYear ? "Select month..." : "Select year first"
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {INTAKE_MONTHS.map((m) => {
+                      const disabled = isMonthDisabled(m.value, intakeYear);
+                      return (
+                        <SelectItem
+                          key={m.value}
+                          value={m.value}
+                          disabled={disabled}
+                        >
+                          {m.label}
+                          {disabled ? " — past" : ""}
                         </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold">Intake Year</label>
-
-                  <Select value={intakeYear} onValueChange={setIntakeYear}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select intake year" />
-                    </SelectTrigger>
-
-                    <SelectContent>
-                      {INTAKE_YEARS.map((year) => (
-                        <SelectItem key={year} value={year.toString()}>
-                          {year}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
               </div>
-            )}
+
+              {/* Intake Year */}
+              <div className="space-y-2">
+                <label className="text-sm font-semibold">Intake Year</label>
+                <Select value={intakeYear} onValueChange={handleYearChange}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select year..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {INTAKE_YEARS.map((y) => (
+                      <SelectItem key={y} value={String(y)}>
+                        {y}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
 
             <Button
               onClick={handleGenerate}
-              disabled={
-                !selectedCountry ||
-                !selectedPurpose ||
-                (selectedPurpose === "study" && (!intakeMonth || !intakeYear))
-              }
+              disabled={!canGenerate}
               className="w-full"
               size="lg"
             >
@@ -894,227 +946,257 @@ export default function CalculatorPage() {
         </Card>
 
         {/* Teaser Results */}
-        {showTeaser && teaser && country && fx && (
-          <div className="space-y-6">
-            {/* FX snapshot */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <Card className="border-primary/20 bg-primary/5">
-                <CardContent className="p-4">
-                  <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">
-                    POF Required
-                  </p>
-                  <p className="text-lg font-bold naira-amount">
-                    {country.currency} {teaser.minAmount.toLocaleString()}
+        {showTeaser &&
+          teaser &&
+          country &&
+          fx &&
+          intakeDate &&
+          monthsRemaining !== null &&
+          timelineStatus && (
+            <div className="space-y-6">
+              {/* Months remaining — hero card */}
+              <Card
+                className={`border ${STATUS_CONFIG[timelineStatus].className}`}
+              >
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between flex-wrap gap-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-background/60 border border-current/20 flex items-center justify-center flex-shrink-0">
+                        <CalendarClock className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <p className="text-xs uppercase tracking-wide font-semibold opacity-70">
+                          Time until your intake
+                        </p>
+                        <p className="text-2xl font-bold">
+                          {monthsRemaining <= 0
+                            ? "This is your intake month"
+                            : monthsRemaining === 1
+                              ? "1 month remaining"
+                              : `${monthsRemaining} months remaining`}
+                        </p>
+                        <p className="text-sm opacity-70 mt-0.5">
+                          Target intake:{" "}
+                          <span className="font-semibold">
+                            {FULL_MONTH_NAMES[intakeDate.getMonth()]}{" "}
+                            {intakeDate.getFullYear()}
+                          </span>
+                        </p>
+                      </div>
+                    </div>
+                    <Badge className={STATUS_CONFIG[timelineStatus].className}>
+                      {(() => {
+                        const Icon = STATUS_CONFIG[timelineStatus].icon;
+                        return <Icon className="w-3.5 h-3.5 mr-1" />;
+                      })()}
+                      {STATUS_CONFIG[timelineStatus].label}
+                    </Badge>
+                  </div>
+
+                  {/* Contextual note based on status */}
+                  <p className="text-sm mt-4 leading-relaxed opacity-80">
+                    {timelineStatus === "safe" &&
+                      `You're ahead of schedule. The recommended preparation window for ${country.name} — ${PURPOSES.find((p) => p.id === selectedPurpose)?.name} starts ${teaser.safeMonthsBeforeIntake} months before intake. Start building your account history now.`}
+                    {timelineStatus === "caution" &&
+                      `Time is getting tight. Ideally preparation should have started ${teaser.safeMonthsBeforeIntake} months before intake — you now have ${monthsRemaining} month${monthsRemaining === 1 ? "" : "s"}. It can still work, but every deposit from now on matters.`}
+                    {timelineStatus === "risky" &&
+                      `This is a high-risk window. With ${monthsRemaining <= 0 ? "no time" : `only ${monthsRemaining} month${monthsRemaining === 1 ? "" : "s"}`} left, building a credible financial history will be very difficult. Consider whether a later intake is more realistic.`}
                   </p>
                 </CardContent>
               </Card>
+
+              {/* FX snapshot */}
+              <div className="grid grid-cols-3 gap-4">
+                <Card className="border-primary/20 bg-primary/5">
+                  <CardContent className="p-4">
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">
+                      POF Required
+                    </p>
+                    <p className="text-lg font-bold naira-amount">
+                      {country.currency} {teaser.minAmount.toLocaleString()}
+                    </p>
+                  </CardContent>
+                </Card>
+                <Card className="border-border">
+                  <CardContent className="p-4">
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">
+                      Parallel Rate
+                    </p>
+                    <p className="text-lg font-bold naira-amount">
+                      ₦{fx.parallel.toLocaleString()}
+                    </p>
+                  </CardContent>
+                </Card>
+                <Card className="border-yellow-200 bg-yellow-50 dark:bg-yellow-950/20">
+                  <CardContent className="p-4">
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">
+                      Naira Target
+                    </p>
+                    <p className="text-lg font-bold naira-amount text-yellow-700 dark:text-yellow-400">
+                      {formatNaira(nairaTarget)}
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Teaser note */}
               <Card className="border-border">
-                <CardContent className="p-4">
-                  <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">
-                    Parallel Rate
-                  </p>
-                  <p className="text-lg font-bold naira-amount">
-                    ₦{fx.parallel.toLocaleString()}
-                  </p>
-                </CardContent>
-              </Card>
-              <Card className="border-yellow-200 bg-yellow-50 dark:bg-yellow-950/20">
-                <CardContent className="p-4">
-                  <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">
-                    Naira Target
-                  </p>
-                  <p className="text-lg font-bold naira-amount text-yellow-700 dark:text-yellow-400">
-                    {formatNaira(nairaTarget)}
+                <CardContent className="p-4 flex gap-3">
+                  <AlertTriangle className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    <strong className="text-foreground">
+                      {country.flag} {country.name} —{" "}
+                      {PURPOSES.find((p) => p.id === selectedPurpose)?.name}{" "}
+                      Visa:
+                    </strong>{" "}
+                    {teaser.teaserNote}
                   </p>
                 </CardContent>
               </Card>
-            </div>
 
-            {selectedPurpose === "study" && monthsRemaining !== null && (
-              <Card className="border-primary/20 bg-primary/5">
-                <CardContent className="p-4">
-                  <p className="text-sm font-medium">Intake selected:</p>
+              {/* Mini calendar — teaser */}
+              <div>
+                <h2 className="text-lg font-bold mb-3">
+                  Preparation Timeline Preview
+                </h2>
+                <div className="grid grid-cols-4 md:grid-cols-6 gap-2">
+                  {Array.from({ length: 12 }).map((_, i) => {
+                    // i = months from now (0 = current month)
+                    const cellDate = new Date(
+                      CURRENT_YEAR,
+                      CURRENT_MONTH_INDEX + i,
+                      1,
+                    );
+                    const monthsToIntakeFromHere = monthsRemaining - i;
+                    const status = getTimelineStatus(
+                      monthsToIntakeFromHere,
+                      teaser.safeMonthsBeforeIntake,
+                      teaser.cautionMonthsBeforeIntake,
+                    );
+                    const isCurrentMonth = i === 0;
+                    const isIntakeMonth =
+                      cellDate.getMonth() === intakeDate.getMonth() &&
+                      cellDate.getFullYear() === intakeDate.getFullYear();
 
-                  <p className="text-2xl font-bold mt-1">
-                    {INTAKE_MONTHS.find((m) => m.value === intakeMonth)?.label}{" "}
-                    {intakeYear}
-                  </p>
-
-                  <p className="text-muted-foreground text-sm mt-2">
-                    {monthsRemaining} month
-                    {monthsRemaining !== 1 ? "s" : ""} remaining before your
-                    intake.
-                  </p>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Teaser note */}
-            <Card className="border-border">
-              <CardContent className="p-4 flex gap-3">
-                <AlertTriangle className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  <strong className="text-foreground">
-                    {country.flag} {country.name} —{" "}
-                    {PURPOSES.find((p) => p.id === selectedPurpose)?.name} Visa:
-                  </strong>{" "}
-                  {teaser.teaserNote}
-                </p>
-              </CardContent>
-            </Card>
-
-            {/* Mini calendar — teaser */}
-            <div>
-              <h2 className="text-lg font-bold mb-3">
-                Recommended Preparation Window
-              </h2>
-              <div className="grid grid-cols-4 md:grid-cols-6 gap-2">
-                {MONTH_NAMES.map((month, i) => {
-                  // const monthsRemaining =
-                  //   (monthsUntilIntake ?? 0) - i >= currentMonthIndex
-                  //     ? i - currentMonthIndex
-                  //     : 12 - currentMonthIndex + i;
-                  // const status = getTimelineStatus(
-                  //   monthsRemaining,
-                  //   teaser.safeMonthsBeforeIntake,
-                  //   teaser.cautionMonthsBeforeIntake,
-                  //   teaser.riskyMonthsBeforeIntake,
-                  // );
-
-                  const intakeIndex = Number(intakeMonth);
-
-                  let distanceToIntake = intakeIndex - i;
-
-                  if (distanceToIntake < 0) {
-                    distanceToIntake += 12;
-                  }
-
-                  const status = getTimelineStatus(
-                    distanceToIntake,
-                    teaser.safeMonthsBeforeIntake,
-                    teaser.cautionMonthsBeforeIntake,
-                    teaser.riskyMonthsBeforeIntake,
-                  );
-
-                  const isCurrentMonth = i === currentMonthIndex;
-
-                  return (
-                    <div
-                      key={month}
-                      className={`
-                        rounded-lg p-2 text-center border text-xs font-semibold
+                    return (
+                      <div
+                        key={i}
+                        className={`
+                        relative rounded-lg p-2 text-center border text-xs font-semibold
                         ${isCurrentMonth ? "ring-2 ring-primary" : ""}
-                        ${
-                          status === "safe"
-                            ? "bg-green-50 border-green-200 text-green-700 dark:bg-green-950/20 dark:border-green-800 dark:text-green-400"
-                            : status === "caution"
-                              ? "bg-yellow-50 border-yellow-200 text-yellow-700 dark:bg-yellow-950/20 dark:border-yellow-800 dark:text-yellow-400"
-                              : "bg-red-50 border-red-200 text-red-700 dark:bg-red-950/20 dark:border-red-800 dark:text-red-400"
-                        }
+                        ${STATUS_CONFIG[status].barClass}
                       `}
+                      >
+                        {isIntakeMonth && (
+                          <span className="absolute -top-2 -right-1 bg-primary text-primary-foreground text-[9px] font-bold px-1.5 py-0.5 rounded-full">
+                            Intake
+                          </span>
+                        )}
+                        <p>{MONTH_NAMES[cellDate.getMonth()]}</p>
+                        <p className="text-[10px] opacity-60">
+                          {cellDate.getFullYear()}
+                        </p>
+                        <p className="text-xs mt-0.5 opacity-70">
+                          {status === "safe"
+                            ? "✓"
+                            : status === "caution"
+                              ? "!"
+                              : "✕"}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="flex gap-4 mt-3 flex-wrap">
+                  {[
+                    {
+                      status: "safe" as const,
+                      icon: CheckCircle,
+                      label: "Safe — Start now",
+                    },
+                    {
+                      status: "caution" as const,
+                      icon: Clock,
+                      label: "Caution — Getting tight",
+                    },
+                    {
+                      status: "risky" as const,
+                      icon: AlertTriangle,
+                      label: "Risky — Too late",
+                    },
+                  ].map((item) => (
+                    <div
+                      key={item.status}
+                      className="flex items-center gap-1.5 text-xs text-muted-foreground"
                     >
-                      <p>{month}</p>
-                      <p className="text-xs mt-0.5 opacity-70">
-                        {status === "safe"
-                          ? "✓"
-                          : status === "caution"
-                            ? "!"
-                            : "✕"}
+                      <item.icon
+                        className={`w-3.5 h-3.5 ${
+                          item.status === "safe"
+                            ? "text-green-600"
+                            : item.status === "caution"
+                              ? "text-yellow-600"
+                              : "text-red-600"
+                        }`}
+                      />
+                      {item.label}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Lump sum warning */}
+              {teaser.requiresHistory && (
+                <Card className="border-red-200 bg-red-50 dark:bg-red-950/20">
+                  <CardContent className="p-4 flex gap-3">
+                    <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-bold text-red-700 dark:text-red-400 mb-1">
+                        Lump Sum Risk — Account History Required
+                      </p>
+                      <p className="text-sm text-red-600 dark:text-red-500">
+                        This embassy actively checks for sudden large deposits.
+                        You need {teaser.safeMonthsBeforeIntake}+ months of
+                        organic account history. A last-minute lump sum will
+                        trigger a rejection.
                       </p>
                     </div>
-                  );
-                })}
-              </div>
-              <div className="flex gap-4 mt-3">
-                {[
-                  {
-                    status: "safe",
-                    icon: CheckCircle,
-                    label: "Safe — Start now",
-                  },
-                  {
-                    status: "caution",
-                    icon: Clock,
-                    label: "Caution — Getting tight",
-                  },
-                  {
-                    status: "risky",
-                    icon: AlertTriangle,
-                    label: "Risky — Too late",
-                  },
-                ].map((item) => (
-                  <div
-                    key={item.status}
-                    className="flex items-center gap-1.5 text-xs text-muted-foreground"
-                  >
-                    <item.icon
-                      className={`w-3.5 h-3.5 ${
-                        item.status === "safe"
-                          ? "text-green-600"
-                          : item.status === "caution"
-                            ? "text-yellow-600"
-                            : "text-red-600"
-                      }`}
-                    />
-                    {item.label}
-                  </div>
-                ))}
-              </div>
-            </div>
+                  </CardContent>
+                </Card>
+              )}
 
-            {/* Lump sum warning */}
-            {teaser.requiresHistory && (
-              <Card className="border-red-200 bg-red-50 dark:bg-red-950/20">
-                <CardContent className="p-4 flex gap-3">
-                  <AlertTriangle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-bold text-red-700 dark:text-red-400 mb-1">
-                      Lump Sum Risk — Account History Required
-                    </p>
-                    <p className="text-sm text-red-600 dark:text-red-500">
-                      This embassy actively checks for sudden large deposits.
-                      You need {teaser.safeMonthsBeforeIntake}+ months of
-                      organic account history. A last-minute lump sum will
-                      trigger a rejection.
-                    </p>
+              {/* Gate — Sign up CTA */}
+              <Card className="border-primary/30 bg-foreground">
+                <CardContent className="p-8 text-center space-y-4">
+                  <div className="flex justify-center gap-3 mb-2">
+                    <TrendingUp className="w-6 h-6 text-primary" />
+                    <Shield className="w-6 h-6 text-primary" />
+                    <Calculator className="w-6 h-6 text-primary" />
                   </div>
+                  <h3 className="text-xl font-bold text-background">
+                    Your full POF strategy is ready
+                  </h3>
+                  <p className="text-background/60 text-sm max-w-md mx-auto">
+                    Create a free account to unlock your complete 12-month
+                    calendar, Statement Health Analyzer, monthly deposit plan,
+                    and Nigerian-specific embassy intelligence.
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                    <Button
+                      onClick={() => router.push("/signin")}
+                      size="lg"
+                      className="text-base"
+                    >
+                      Unlock Full Strategy — Free
+                      <ArrowRight className="w-4 h-4 ml-2" />
+                    </Button>
+                  </div>
+                  <p className="text-xs text-background/40">
+                    No credit card. No spam. Takes 10 seconds with Google.
+                  </p>
                 </CardContent>
               </Card>
-            )}
-
-            {/* Gate — Sign up CTA */}
-            <Card className="border-primary/30 bg-foreground text-background">
-              <CardContent className="p-8 text-center space-y-4">
-                <div className="flex justify-center gap-3 mb-2">
-                  <TrendingUp className="w-6 h-6 text-primary" />
-                  <Shield className="w-6 h-6 text-primary" />
-                  <Calculator className="w-6 h-6 text-primary" />
-                </div>
-                <h3 className="text-xl font-bold text-background">
-                  Your full POF strategy is ready
-                </h3>
-                <p className="text-background/60 text-sm max-w-md mx-auto">
-                  Create a free account to unlock your complete 12-month
-                  calendar, Statement Health Analyzer, monthly deposit plan, and
-                  Nigerian-specific embassy intelligence.
-                </p>
-                <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                  <Button
-                    onClick={() => router.push("/signin")}
-                    size="lg"
-                    className="text-base"
-                  >
-                    Unlock Full Strategy — Free
-                    <ArrowRight className="w-4 h-4 ml-2" />
-                  </Button>
-                </div>
-                <p className="text-xs text-background/40">
-                  No credit card. No spam. Takes 10 seconds with Google.
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-        )}
+            </div>
+          )}
       </div>
     </div>
   );
