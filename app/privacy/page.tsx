@@ -401,3 +401,48 @@ export default function PrivacyPage() {
             </div>
 
           </Section>
+        </div>
+
+        {/* Footer */}
+
+        <div className="space-y-6 border-t pt-8">
+
+          <div className="rounded-xl border bg-muted/40 p-5">
+            <p className="text-sm text-muted-foreground leading-7">
+              By continuing to use Smarrrt, you acknowledge that you have read
+              and understood this Privacy Policy. If you do not agree with any
+              part of this policy, please discontinue use of the service.
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-3 sm:flex-row">
+
+            <Button asChild className="sm:flex-1">
+              <Link href="/">
+                Back to Home
+              </Link>
+            </Button>
+
+            <Button
+              asChild
+              variant="outline"
+              className="sm:flex-1"
+            >
+              <Link href="/terms">
+                View Terms of Use
+              </Link>
+            </Button>
+
+          </div>
+
+          <p className="text-center text-xs text-muted-foreground">
+            © {new Date().getFullYear()} Smarrrt. All rights reserved.
+          </p>
+
+        </div>
+
+      </div>
+
+    </div>
+  )
+}
