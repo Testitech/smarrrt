@@ -206,3 +206,198 @@ export default function PrivacyPage() {
             </p>
 
           </Section>
+
+          {/* 4 */}
+
+          <Section title="4. Third Party Services">
+
+            <p>
+              To operate Smarrrt reliably, we rely on trusted third party
+              providers for authentication, hosting, database management and
+              email delivery.
+            </p>
+
+            <div className="space-y-4">
+
+              {[
+                {
+                  name: "Google OAuth",
+                  purpose: "Secure sign in with your Google account.",
+                  link: "https://policies.google.com/privacy",
+                },
+                {
+                  name: "Resend",
+                  purpose: "Delivery of authentication emails and Magic Links.",
+                  link: "https://resend.com/privacy",
+                },
+                {
+                  name: "Vercel",
+                  purpose: "Hosting and deployment of the Smarrrt application.",
+                  link: "https://vercel.com/legal/privacy-policy",
+                },
+                {
+                  name: "Prisma Postgres",
+                  purpose: "Secure storage of application data.",
+                  link: "https://www.prisma.io/privacy",
+                },
+              ].map((service) => (
+                <div
+                  key={service.name}
+                  className="rounded-xl border p-4 transition-colors hover:bg-muted/40"
+                >
+                  <div className="flex items-start justify-between gap-4">
+
+                    <div>
+                      <h3 className="font-medium text-foreground">
+                        {service.name}
+                      </h3>
+
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {service.purpose}
+                      </p>
+                    </div>
+
+                    <a
+                      href={service.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+                    >
+                      Privacy
+                      <ExternalLink className="h-3.5 w-3.5" />
+                    </a>
+
+                  </div>
+                </div>
+              ))}
+
+            </div>
+
+          </Section>
+
+          {/* 5 */}
+
+          <Section title="5. Exchange Rate Information">
+
+            <p>
+              Smarrrt may display estimated exchange rates obtained from
+              publicly available market data sources to help users plan their
+              Proof of Funds strategy.
+            </p>
+
+            <div className="rounded-xl border-l-4 border-amber-500 bg-amber-500/10 p-4">
+
+              <p className="text-sm leading-7">
+                Exchange rates constantly change. The figures displayed on
+                Smarrrt are provided for planning purposes only and should not
+                be treated as financial advice or guaranteed market prices.
+              </p>
+
+            </div>
+
+            <p>
+              Before making any financial transaction, always confirm the
+              current exchange rate with your bank or preferred Bureau de
+              Change.
+            </p>
+
+          </Section>
+
+          {/* 6 */}
+
+          <Section title="6. Data Retention">
+
+            <p>
+              We retain your information only for as long as it is reasonably
+              necessary to provide the Smarrrt service and comply with legal
+              obligations.
+            </p>
+
+            <BulletList
+              items={[
+                "Your account information remains available while your account is active.",
+                "Saved planning timelines remain available until you delete them or close your account.",
+                "Authentication sessions automatically expire after a period of inactivity.",
+                "When you request account deletion, your personal information is permanently removed within a reasonable period unless we are legally required to retain specific records.",
+              ]}
+            />
+
+          </Section>
+
+          {/* 7 */}
+
+          <Section title="7. Your Rights">
+
+            <p>
+              Depending on applicable laws, you may have the right to:
+            </p>
+
+            <BulletList
+              items={[
+                "Access the personal information we hold about you.",
+                "Request correction of inaccurate information.",
+                "Request deletion of your account and associated data.",
+                "Withdraw consent where processing is based on consent.",
+              ]}
+            />
+
+            <p>
+              To exercise any of these rights, contact us at{" "}
+              <a
+                href="mailto:privacy@smarrrt.io"
+                className="font-medium text-primary hover:underline"
+              >
+                privacy@smarrrt.io
+              </a>
+              .
+            </p>
+
+          </Section>
+
+          {/* 8 */}
+
+          <Section title="8. Changes to This Privacy Policy">
+
+            <p>
+              As Smarrrt evolves, we may update this Privacy Policy from time to
+              time to reflect new features, legal requirements or improvements
+              to our services.
+            </p>
+
+            <p>
+              Whenever material changes are made, the <strong>Last updated</strong>{" "}
+              date at the top of this page will be revised.
+            </p>
+
+            <p>
+              Continued use of Smarrrt after those updates indicates acceptance
+              of the revised Privacy Policy.
+            </p>
+
+          </Section>
+
+          {/* 9 */}
+
+          <Section title="9. Contact">
+
+            <p>
+              Questions, feedback or privacy related concerns are always
+              welcome.
+            </p>
+
+            <div className="rounded-xl border bg-muted/40 p-5">
+
+              <p className="font-medium">
+                Email
+              </p>
+
+              <a
+                href="mailto:privacy@smarrrt.io"
+                className="mt-2 inline-block text-primary hover:underline"
+              >
+                privacy@smarrrt.io
+              </a>
+
+            </div>
+
+          </Section>
