@@ -1,8 +1,8 @@
-import type { Metadata } from "next"
-import Link from "next/link"
+import type { Metadata } from "next";
+import Link from "next/link";
 
-import { Button } from "@/components/ui/button"
-import { ArrowLeft, ExternalLink, Shield } from "lucide-react"
+import { Button } from "@/components/ui/button";
+import { ArrowLeft, ExternalLink, Shield } from "lucide-react";
 
 // ─────────────────────────────────────────
 // METADATA
@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   title: "Privacy Policy | Smarrrt",
   description:
     "Learn how Smarrrt collects, uses, stores and protects your personal information.",
-}
+};
 
 // ─────────────────────────────────────────
 // REUSABLE COMPONENTS
@@ -22,8 +22,8 @@ function Section({
   title,
   children,
 }: {
-  title: string
-  children: React.ReactNode
+  title: string;
+  children: React.ReactNode;
 }) {
   return (
     <section className="space-y-4 pt-8 first:pt-0">
@@ -33,7 +33,7 @@ function Section({
         {children}
       </div>
     </section>
-  )
+  );
 }
 
 function BulletList({ items }: { items: string[] }) {
@@ -46,7 +46,7 @@ function BulletList({ items }: { items: string[] }) {
         </li>
       ))}
     </ul>
-  )
+  );
 }
 
 // ─────────────────────────────────────────
@@ -54,18 +54,15 @@ function BulletList({ items }: { items: string[] }) {
 // ─────────────────────────────────────────
 
 export default function PrivacyPage() {
-  const lastUpdated = "June 2026"
+  const lastUpdated = "June 2026";
 
   return (
     <div className="min-h-screen bg-background">
-
       {/* Header */}
 
       <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-4 sm:px-6">
-
           <Link href="/" className="flex items-center gap-2">
-
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
               <span className="text-xs font-bold text-primary-foreground">
                 Sm
@@ -75,7 +72,6 @@ export default function PrivacyPage() {
             <span className="text-lg font-bold">
               Sma<span className="text-primary">rrr</span>t
             </span>
-
           </Link>
 
           <Button variant="ghost" size="sm" asChild>
@@ -84,26 +80,21 @@ export default function PrivacyPage() {
               Back
             </Link>
           </Button>
-
         </div>
       </header>
 
       {/* Main */}
 
       <main className="mx-auto max-w-3xl px-4 py-12 sm:px-6">
-
         {/* Hero */}
 
         <div className="mb-12 rounded-2xl border bg-card p-8 shadow-sm">
-
           <div className="flex items-start gap-4">
-
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
               <Shield className="h-6 w-6 text-primary" />
             </div>
 
             <div className="space-y-3">
-
               <div>
                 <h1 className="text-3xl font-bold tracking-tight">
                   Privacy Policy
@@ -119,24 +110,19 @@ export default function PrivacyPage() {
                 Nigerian visa applicants prepare financially for their study,
                 work and relocation goals. Protecting your personal information
                 is important to us. This Privacy Policy explains what
-                information we collect, why we collect it, how we use it and
-                the choices you have regarding your data.
+                information we collect, why we collect it, how we use it and the
+                choices you have regarding your data.
               </p>
-
             </div>
-
           </div>
-
         </div>
 
         {/* Sections */}
 
         <div className="divide-y">
-
           {/* 1 */}
 
           <Section title="1. Information We Collect">
-
             <p>
               When you create an account using Google, we receive basic profile
               information including your name, email address and profile
@@ -157,13 +143,11 @@ export default function PrivacyPage() {
               credentials. The balance you provide is used only for planning
               calculations.
             </p>
-
           </Section>
 
           {/* 2 */}
 
           <Section title="2. How We Use Your Information">
-
             <p>Your information helps us provide and improve Smarrrt.</p>
 
             <BulletList
@@ -181,13 +165,11 @@ export default function PrivacyPage() {
               We do not sell your personal information or use it for targeted
               advertising.
             </p>
-
           </Section>
 
           {/* 3 */}
 
           <Section title="3. Data Storage & Security">
-
             <p>
               Your information is stored securely using PostgreSQL with Prisma
               ORM. Connections to our database are encrypted and access is
@@ -201,16 +183,14 @@ export default function PrivacyPage() {
             </p>
 
             <p>
-              Every user's planning data remains private. Other users cannot
-              access your saved timelines, balances or planning history.
+              Every user&apos;s planning data remains private. Other users
+              cannot access your saved timelines, balances or planning history.
             </p>
-
           </Section>
 
           {/* 4 */}
 
           <Section title="4. Third Party Services">
-
             <p>
               To operate Smarrrt reliably, we rely on trusted third party
               providers for authentication, hosting, database management and
@@ -218,7 +198,6 @@ export default function PrivacyPage() {
             </p>
 
             <div className="space-y-4">
-
               {[
                 {
                   name: "Google OAuth",
@@ -246,7 +225,6 @@ export default function PrivacyPage() {
                   className="rounded-xl border p-4 transition-colors hover:bg-muted/40"
                 >
                   <div className="flex items-start justify-between gap-4">
-
                     <div>
                       <h3 className="font-medium text-foreground">
                         {service.name}
@@ -266,19 +244,15 @@ export default function PrivacyPage() {
                       Privacy
                       <ExternalLink className="h-3.5 w-3.5" />
                     </a>
-
                   </div>
                 </div>
               ))}
-
             </div>
-
           </Section>
 
           {/* 5 */}
 
           <Section title="5. Exchange Rate Information">
-
             <p>
               Smarrrt may display estimated exchange rates obtained from
               publicly available market data sources to help users plan their
@@ -286,13 +260,11 @@ export default function PrivacyPage() {
             </p>
 
             <div className="rounded-xl border-l-4 border-amber-500 bg-amber-500/10 p-4">
-
               <p className="text-sm leading-7">
                 Exchange rates constantly change. The figures displayed on
                 Smarrrt are provided for planning purposes only and should not
                 be treated as financial advice or guaranteed market prices.
               </p>
-
             </div>
 
             <p>
@@ -300,13 +272,11 @@ export default function PrivacyPage() {
               current exchange rate with your bank or preferred Bureau de
               Change.
             </p>
-
           </Section>
 
           {/* 6 */}
 
           <Section title="6. Data Retention">
-
             <p>
               We retain your information only for as long as it is reasonably
               necessary to provide the Smarrrt service and comply with legal
@@ -321,16 +291,12 @@ export default function PrivacyPage() {
                 "When you request account deletion, your personal information is permanently removed within a reasonable period unless we are legally required to retain specific records.",
               ]}
             />
-
           </Section>
 
           {/* 7 */}
 
           <Section title="7. Your Rights">
-
-            <p>
-              Depending on applicable laws, you may have the right to:
-            </p>
+            <p>Depending on applicable laws, you may have the right to:</p>
 
             <BulletList
               items={[
@@ -351,13 +317,11 @@ export default function PrivacyPage() {
               </a>
               .
             </p>
-
           </Section>
 
           {/* 8 */}
 
           <Section title="8. Changes to This Privacy Policy">
-
             <p>
               As Smarrrt evolves, we may update this Privacy Policy from time to
               time to reflect new features, legal requirements or improvements
@@ -365,31 +329,27 @@ export default function PrivacyPage() {
             </p>
 
             <p>
-              Whenever material changes are made, the <strong>Last updated</strong>{" "}
-              date at the top of this page will be revised.
+              Whenever material changes are made, the{" "}
+              <strong>Last updated</strong> date at the top of this page will be
+              revised.
             </p>
 
             <p>
               Continued use of Smarrrt after those updates indicates acceptance
               of the revised Privacy Policy.
             </p>
-
           </Section>
 
           {/* 9 */}
 
           <Section title="9. Contact">
-
             <p>
               Questions, feedback or privacy related concerns are always
               welcome.
             </p>
 
             <div className="rounded-xl border bg-muted/40 p-5">
-
-              <p className="font-medium">
-                Email
-              </p>
+              <p className="font-medium">Email</p>
 
               <a
                 href="mailto:privacy@smarrrt.io"
@@ -397,16 +357,13 @@ export default function PrivacyPage() {
               >
                 privacy@smarrrt.io
               </a>
-
             </div>
-
           </Section>
         </div>
 
         {/* Footer */}
 
         <div className="space-y-6 border-t pt-8">
-
           <div className="rounded-xl border bg-muted/40 p-5">
             <p className="text-sm text-muted-foreground leading-7">
               By continuing to use Smarrrt, you acknowledge that you have read
@@ -416,33 +373,20 @@ export default function PrivacyPage() {
           </div>
 
           <div className="flex flex-col gap-3 sm:flex-row">
-
             <Button asChild className="sm:flex-1">
-              <Link href="/">
-                Back to Home
-              </Link>
+              <Link href="/">Back to Home</Link>
             </Button>
 
-            <Button
-              asChild
-              variant="outline"
-              className="sm:flex-1"
-            >
-              <Link href="/terms">
-                View Terms of Use
-              </Link>
+            <Button asChild variant="outline" className="sm:flex-1">
+              <Link href="/terms">View Terms of Use</Link>
             </Button>
-
           </div>
 
           <p className="text-center text-xs text-muted-foreground">
             © {new Date().getFullYear()} Smarrrt. All rights reserved.
           </p>
-
         </div>
-
-      </div>
-
+      </main>
     </div>
-  )
+  );
 }
