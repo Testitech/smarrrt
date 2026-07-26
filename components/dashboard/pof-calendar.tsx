@@ -10,7 +10,6 @@ import type { MonthStatus, PofStatus } from "@/types";
 
 type PofCalendarProps = {
   monthlyBreakdown: MonthStatus[];
-  currentMonth: number;
 };
 
 // ─────────────────────────────────────────
@@ -30,7 +29,7 @@ const STATUS_CONFIG: Record<
   }
 > = {
   safe: {
-    label: "Safe",
+    label: "Earlier",
     icon: CheckCircle,
     barColor: "bg-green-500",
     bgColor: "bg-green-50 dark:bg-green-950/20",
@@ -40,7 +39,7 @@ const STATUS_CONFIG: Record<
       "bg-green-100 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-400 dark:border-green-800",
   },
   caution: {
-    label: "Caution",
+    label: "Tightening",
     icon: AlertTriangle,
     barColor: "bg-yellow-500",
     bgColor: "bg-yellow-50 dark:bg-yellow-950/20",
@@ -50,7 +49,7 @@ const STATUS_CONFIG: Record<
       "bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-950 dark:text-yellow-400 dark:border-yellow-800",
   },
   risky: {
-    label: "Risky",
+    label: "Late",
     icon: XCircle,
     barColor: "bg-red-500",
     bgColor: "bg-red-50 dark:bg-red-950/20",
@@ -111,7 +110,7 @@ function MonthCard({
           </p>
 
           <h3 className="text-xl font-bold tracking-tight text-foreground mt-1">
-            {month.monthName}
+            {month.monthName} {month.year}
           </h3>
         </div>
 
@@ -132,7 +131,7 @@ function MonthCard({
       <div className="mb-4">
         <div className="flex items-center justify-between mb-1.5">
           <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
-            Embassy Confidence
+            Planning window
           </span>
 
           <span className={`text-xs font-semibold ${config.textColor}`}>
@@ -198,10 +197,7 @@ function CalendarLegend() {
 // MAIN COMPONENT
 // ─────────────────────────────────────────
 
-export default function PofCalendar({
-  monthlyBreakdown,
-  currentMonth,
-}: PofCalendarProps) {
+export default function PofCalendar({ monthlyBreakdown }: PofCalendarProps) {
   const safeCount = useMemo(
     () => monthlyBreakdown.filter((m) => m.status === "safe").length,
     [monthlyBreakdown],
@@ -227,7 +223,7 @@ export default function PofCalendar({
                 {safeCount}
               </p>
               <p className="text-xs font-medium text-green-700 dark:text-green-400 mt-1">
-                Safe Months
+                Earlier
               </p>
             </div>
 
@@ -236,14 +232,14 @@ export default function PofCalendar({
                 {cautionCount}
               </p>
               <p className="text-xs font-medium text-yellow-700 dark:text-yellow-400 mt-1">
-                Caution
+                Tightening
               </p>
             </div>
 
             <div className="rounded-xl bg-red-500/10 px-5 py-4 border border-red-500/20">
               <p className="text-3xl font-bold text-red-600">{riskyCount}</p>
               <p className="text-xs font-medium text-red-700 dark:text-red-400 mt-1">
-                Risky
+                Late
               </p>
             </div>
           </div>
@@ -256,11 +252,11 @@ export default function PofCalendar({
       </div>
       {/* Calendar grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-5">
-        {monthlyBreakdown.map((month) => (
+        {monthlyBreakdown.map((month, index) => (
           <MonthCard
-            key={month.month}
+            key={`${month.year}-${month.month}`}
             month={month}
-            isCurrentMonth={month.month === currentMonth}
+            isCurrentMonth={index === 0}
           />
         ))}
       </div>

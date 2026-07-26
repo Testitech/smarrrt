@@ -2,7 +2,7 @@ import { auth, signOut } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { LogOut } from "lucide-react";
+import { ArrowRight, LogOut } from "lucide-react";
 import { SidebarNav } from "@/components/dashboard/sidebar-nav";
 import { MobileNav } from "@/components/dashboard/mobile-nav";
 
@@ -13,17 +13,41 @@ export default async function DashboardLayout({
 }) {
   const session = await auth();
 
-  if (!session?.user) {
+  if (!session?.user?.id) {
     redirect("/signin");
   }
 
+  if (!session.user.isActive) {
+    redirect("/signin?error=AccountDisabled");
+  }
+
+  const isAdmin = session.user.role === "ADMIN";
+  const displayName = session.user.name?.trim() || "Smarrrt user";
+  const initial =
+    displayName.charAt(0).toUpperCase() ||
+    session.user.email?.charAt(0).toUpperCase() ||
+    "U";
+
   return (
     <div className="min-h-screen bg-muted/30">
+      <a
+        href="#main-content"
+        className="fixed left-4 top-4 z-[100] -translate-y-24 rounded-lg bg-background px-4 py-2 text-sm font-semibold shadow-lg transition-transform focus:translate-y-0 focus:outline-none focus:ring-2 focus:ring-primary"
+      >
+        Skip to content
+      </a>
       {/* ───────────────── SIDEBAR DESKTOP ───────────────── */}
-      <aside className="hidden lg:flex fixed inset-y-0 left-0 z-50 w-72 flex-col border-r border-border bg-background/95 backdrop-blur">
+      <aside
+        aria-label="Dashboard sidebar"
+        className="fixed inset-y-0 left-0 z-50 hidden w-72 flex-col border-r border-border bg-background/95 backdrop-blur lg:flex"
+      >
         {/* Logo */}
         <div className="px-6 py-7 border-b border-border">
-          <Link href="/" className="flex items-center gap-3">
+          <Link
+            href="/dashboard"
+            aria-label="Smarrrt dashboard"
+            className="flex items-center gap-3 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4"
+          >
             <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-primary shadow-sm">
               <span className="text-primary-foreground font-bold text-lg">
                 Sm
@@ -36,7 +60,7 @@ export default async function DashboardLayout({
               </p>
 
               <p className="text-sm text-muted-foreground">
-                Visa POF Intelligence
+                Visa POF Planning
               </p>
             </div>
           </Link>
@@ -49,19 +73,19 @@ export default async function DashboardLayout({
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={session.user.image}
-                alt={session.user.name ?? "User"}
+                alt=""
                 className="w-12 h-12 rounded-2xl object-cover"
               />
             ) : (
               <div className="w-12 h-12 rounded-2xl bg-primary flex items-center justify-center">
                 <span className="text-primary-foreground font-bold">
-                  {session.user.name?.charAt(0) ?? "U"}
+                  {initial}
                 </span>
               </div>
             )}
 
             <div className="min-w-0">
-              <p className="font-semibold truncate">{session.user.name}</p>
+              <p className="font-semibold truncate">{displayName}</p>
 
               <p className="text-sm text-muted-foreground truncate">
                 {session.user.email}
@@ -71,37 +95,23 @@ export default async function DashboardLayout({
         </div>
 
         {/* Navigation */}
-        <SidebarNav />
+        <SidebarNav isAdmin={isAdmin} />
 
-        {/* FX Card */}
+        {/* FX data notice */}
         <div className="px-4 pb-4">
-          <div className="rounded-3xl border border-border bg-muted/50 p-5">
-            <div className="flex items-center justify-between mb-4">
-              <p className="text-sm font-semibold">Parallel Market</p>
-
-              <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary">
-                Live
-              </span>
-            </div>
-
-            <div className="space-y-3">
-              {[
-                { pair: "USD", rate: "₦1,650" },
-                { pair: "GBP", rate: "₦2,050" },
-                { pair: "CAD", rate: "₦1,220" },
-              ].map((rate) => (
-                <div
-                  key={rate.pair}
-                  className="flex items-center justify-between"
-                >
-                  <span className="text-sm text-muted-foreground">
-                    {rate.pair}/NGN
-                  </span>
-
-                  <span className="font-mono font-semibold">{rate.rate}</span>
-                </div>
-              ))}
-            </div>
+          <div className="rounded-2xl border border-border bg-muted/40 p-4">
+            <p className="text-sm font-semibold">FX planning references</p>
+            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+              Review the source and recorded time before using an indicative
+              rate in your plan.
+            </p>
+            <Link
+              href="/dashboard/fx-rates"
+              className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            >
+              Review rates
+              <ArrowRight aria-hidden="true" className="size-3" />
+            </Link>
           </div>
         </div>
 
@@ -116,9 +126,9 @@ export default async function DashboardLayout({
             <Button
               type="submit"
               variant="ghost"
-              className="w-full justify-start rounded-2xl h-11"
+              className="h-11 w-full justify-start rounded-xl"
             >
-              <LogOut className="w-4 h-4 mr-2" />
+              <LogOut aria-hidden="true" className="mr-2 size-4" />
               Sign out
             </Button>
           </form>
@@ -128,7 +138,11 @@ export default async function DashboardLayout({
       {/* ───────────────── MOBILE TOPBAR ───────────────── */}
       <header className="lg:hidden sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur">
         <div className="flex h-16 items-center justify-between px-4">
-          <Link href="/" className="flex items-center gap-2">
+          <Link
+            href="/dashboard"
+            aria-label="Smarrrt dashboard"
+            className="flex items-center gap-2 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          >
             <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-primary">
               <span className="text-primary-foreground font-bold">Sm</span>
             </div>
@@ -138,35 +152,40 @@ export default async function DashboardLayout({
             </span>
           </Link>
 
-          {session.user.image ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={session.user.image}
-              alt="User"
-              className="w-9 h-9 rounded-xl"
-            />
-          ) : (
-            <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center">
-              <span className="text-sm font-bold text-primary-foreground">
-                {session.user.name?.charAt(0)}
+          <Link
+            href="/dashboard/settings"
+            aria-label="Open account overview"
+            className="rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+          >
+            {session.user.image ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={session.user.image}
+                alt=""
+                className="size-9 rounded-xl object-cover"
+              />
+            ) : (
+              <span className="flex size-9 items-center justify-center rounded-xl bg-primary text-sm font-bold text-primary-foreground">
+                {initial}
               </span>
-            </div>
-          )}
+            )}
+          </Link>
         </div>
       </header>
 
       {/* ───────────────── MAIN ───────────────── */}
       <div className="lg:pl-72">
-        <main className="p-6 md:p-8 max-w-6xl mx-auto pb-24 md:pb-0">
+        <main
+          id="main-content"
+          className="mx-auto max-w-6xl px-4 py-6 pb-24 sm:px-6 md:px-8 md:py-8 lg:pb-8"
+        >
           {children}
         </main>
       </div>
 
       {/* ───────────────── MOBILE BOTTOM NAV ───────────────── */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-background/95 backdrop-blur">
-        <div className="grid grid-cols-4 h-20">
-          <MobileNav />
-        </div>
+      <div className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-background/95 backdrop-blur lg:hidden">
+        <MobileNav isAdmin={isAdmin} />
       </div>
     </div>
   );

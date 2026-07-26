@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { formatNaira } from "@/lib/format";
 import {
   Select,
   SelectContent,
@@ -14,6 +15,8 @@ import {
 } from "@/components/ui/select";
 import {
   ArrowRight,
+  Loader2,
+  CheckCircle2,
   Calculator,
   TrendingUp,
   Shield,
@@ -23,707 +26,44 @@ import {
   CalendarClock,
 } from "lucide-react";
 
-// ─────────────────────────────────────────
-// STATIC DATA
-// Hardcoded for the ungated calculator
-// Real data comes from DB post-auth
-// ─────────────────────────────────────────
+// ── Data & helpers from dedicated modules ──
+import {
+  COUNTRIES,
+  PURPOSES,
+  MONTH_NAMES,
+  FULL_MONTH_NAMES,
+  INTAKE_MONTHS,
+} from "@/lib/calculator-data";
 
-const COUNTRIES = [
-  { id: "gb", name: "United Kingdom", flag: "🇬🇧", currency: "GBP" },
-  { id: "us", name: "United States", flag: "🇺🇸", currency: "USD" },
-  { id: "ca", name: "Canada", flag: "🇨🇦", currency: "CAD" },
-  { id: "au", name: "Australia", flag: "🇦🇺", currency: "AUD" },
-  { id: "nl", name: "Netherlands", flag: "🇳🇱", currency: "EUR" },
-  { id: "fr", name: "France", flag: "🇫🇷", currency: "EUR" },
-  { id: "se", name: "Sweden", flag: "🇸🇪", currency: "SEK" },
-  { id: "fi", name: "Finland", flag: "🇫🇮", currency: "EUR" },
-  { id: "mt", name: "Malta", flag: "🇲🇹", currency: "EUR" },
-  { id: "es", name: "Spain", flag: "🇪🇸", currency: "EUR" },
-];
-
-const PURPOSES = [
-  { id: "study", name: "Study", icon: "🎓" },
-  { id: "work", name: "Work", icon: "💼" },
-  { id: "visit", name: "Visit", icon: "✈️" },
-  { id: "tourism", name: "Tourism", icon: "🏖️" },
-  { id: "business", name: "Business", icon: "🤝" },
-  { id: "permanent-residency", name: "Permanent Residency", icon: "🏡" },
-];
-
-// Teaser data — enough to show value, not the full strategy
-type TeaserEntry = {
-  minAmount: number;
-  safeMonthsBeforeIntake: number;
-  cautionMonthsBeforeIntake: number;
-  riskyMonthsBeforeIntake: number;
-  requiresHistory: boolean;
-  teaserNote: string;
-};
-
-const TEASER_DATA: Record<string, Record<string, TeaserEntry>> = {
-  gb: {
-    study: {
-      minAmount: 12006,
-      safeMonthsBeforeIntake: 3,
-      cautionMonthsBeforeIntake: 2,
-      riskyMonthsBeforeIntake: 1,
-      requiresHistory: true,
-      teaserNote:
-        "UKVI requires funds held for 28 consecutive days. Nigerian applicants need a 90-day buffer for FX sourcing.",
-    },
-    visit: {
-      minAmount: 3000,
-      safeMonthsBeforeIntake: 3,
-      cautionMonthsBeforeIntake: 2,
-      riskyMonthsBeforeIntake: 1,
-      requiresHistory: false,
-      teaserNote:
-        "UK visit visa refusal rates for Nigerians are high. A clean 6-month statement matters more than balance size.",
-    },
-    work: {
-      minAmount: 2500,
-      safeMonthsBeforeIntake: 2,
-      cautionMonthsBeforeIntake: 1,
-      riskyMonthsBeforeIntake: 1,
-      requiresHistory: false,
-      teaserNote:
-        "UK Skilled Worker visa requires employer sponsorship. Personal maintenance funds needed for settlement period.",
-    },
-    tourism: {
-      minAmount: 2000,
-      safeMonthsBeforeIntake: 3,
-      cautionMonthsBeforeIntake: 2,
-      riskyMonthsBeforeIntake: 1,
-      requiresHistory: false,
-      teaserNote:
-        "Same route as UK visit visa. Show genuine tourism intent and strong ties to Nigeria.",
-    },
-    business: {
-      minAmount: 2000,
-      safeMonthsBeforeIntake: 2,
-      cautionMonthsBeforeIntake: 1,
-      riskyMonthsBeforeIntake: 1,
-      requiresHistory: false,
-      teaserNote:
-        "UK business visitor visa requires invitation letter from a UK company.",
-    },
-    "permanent-residency": {
-      minAmount: 3000,
-      safeMonthsBeforeIntake: 6,
-      cautionMonthsBeforeIntake: 3,
-      riskyMonthsBeforeIntake: 1,
-      requiresHistory: true,
-      teaserNote:
-        "ILR requires 12 months of clean financial history. Start preparation well in advance.",
-    },
-  },
-  us: {
-    study: {
-      minAmount: 35000,
-      safeMonthsBeforeIntake: 6,
-      cautionMonthsBeforeIntake: 4,
-      riskyMonthsBeforeIntake: 2,
-      requiresHistory: true,
-      teaserNote:
-        "F-1 visa requires POF before your university issues the I-20. Start 6 months before your intake.",
-    },
-    visit: {
-      minAmount: 3000,
-      safeMonthsBeforeIntake: 3,
-      cautionMonthsBeforeIntake: 2,
-      riskyMonthsBeforeIntake: 1,
-      requiresHistory: false,
-      teaserNote:
-        "B-2 visa has high refusal rates for Nigerians. Show strong ties to Nigeria.",
-    },
-    work: {
-      minAmount: 5000,
-      safeMonthsBeforeIntake: 3,
-      cautionMonthsBeforeIntake: 2,
-      riskyMonthsBeforeIntake: 1,
-      requiresHistory: false,
-      teaserNote:
-        "H-1B requires employer sponsorship and lottery selection. O-1 has no cap.",
-    },
-    tourism: {
-      minAmount: 3000,
-      safeMonthsBeforeIntake: 3,
-      cautionMonthsBeforeIntake: 2,
-      riskyMonthsBeforeIntake: 1,
-      requiresHistory: false,
-      teaserNote:
-        "Same B-2 route as visit visa. Apply 3-4 months before intended travel.",
-    },
-    business: {
-      minAmount: 4000,
-      safeMonthsBeforeIntake: 2,
-      cautionMonthsBeforeIntake: 1,
-      riskyMonthsBeforeIntake: 1,
-      requiresHistory: false,
-      teaserNote: "B-1 business visa. No working for pay permitted in the US.",
-    },
-    "permanent-residency": {
-      minAmount: 15000,
-      safeMonthsBeforeIntake: 6,
-      cautionMonthsBeforeIntake: 3,
-      riskyMonthsBeforeIntake: 1,
-      requiresHistory: true,
-      teaserNote:
-        "Green Card sponsor must show 125% of federal poverty level. USCIS processing takes 12-36 months.",
-    },
-  },
-  ca: {
-    study: {
-      minAmount: 20635,
-      safeMonthsBeforeIntake: 6,
-      cautionMonthsBeforeIntake: 4,
-      riskyMonthsBeforeIntake: 2,
-      requiresHistory: true,
-      teaserNote:
-        "IRCC scrutinises Nigerian applications for account dumping. Build organic history over 6 months.",
-    },
-    visit: {
-      minAmount: 3000,
-      safeMonthsBeforeIntake: 3,
-      cautionMonthsBeforeIntake: 2,
-      riskyMonthsBeforeIntake: 1,
-      requiresHistory: false,
-      teaserNote:
-        "Canada TRV has high refusal rate for Nigerians. Extensive documentation required.",
-    },
-    work: {
-      minAmount: 5000,
-      safeMonthsBeforeIntake: 3,
-      cautionMonthsBeforeIntake: 2,
-      riskyMonthsBeforeIntake: 1,
-      requiresHistory: false,
-      teaserNote: "LMIA from employer required for most work permits.",
-    },
-    tourism: {
-      minAmount: 3000,
-      safeMonthsBeforeIntake: 3,
-      cautionMonthsBeforeIntake: 2,
-      riskyMonthsBeforeIntake: 1,
-      requiresHistory: false,
-      teaserNote: "Same TRV route as visit visa.",
-    },
-    business: {
-      minAmount: 4000,
-      safeMonthsBeforeIntake: 2,
-      cautionMonthsBeforeIntake: 1,
-      riskyMonthsBeforeIntake: 1,
-      requiresHistory: false,
-      teaserNote:
-        "Show clear business purpose and invitation from Canadian company.",
-    },
-    "permanent-residency": {
-      minAmount: 13757,
-      safeMonthsBeforeIntake: 6,
-      cautionMonthsBeforeIntake: 3,
-      riskyMonthsBeforeIntake: 1,
-      requiresHistory: true,
-      teaserNote:
-        "Express Entry draws happen every 2 weeks. Maintain funds year-round.",
-    },
-  },
-  au: {
-    study: {
-      minAmount: 29710,
-      safeMonthsBeforeIntake: 5,
-      cautionMonthsBeforeIntake: 3,
-      riskyMonthsBeforeIntake: 1,
-      requiresHistory: true,
-      teaserNote:
-        "DHA checks for genuine savings. GTE statement must explain intent to return to Nigeria.",
-    },
-    visit: {
-      minAmount: 5000,
-      safeMonthsBeforeIntake: 3,
-      cautionMonthsBeforeIntake: 2,
-      riskyMonthsBeforeIntake: 1,
-      requiresHistory: false,
-      teaserNote:
-        "Subclass 600 visitor visa. Show return flight and hotel booking.",
-    },
-    work: {
-      minAmount: 5000,
-      safeMonthsBeforeIntake: 3,
-      cautionMonthsBeforeIntake: 2,
-      riskyMonthsBeforeIntake: 1,
-      requiresHistory: false,
-      teaserNote: "TSS Subclass 482 requires employer sponsorship.",
-    },
-    tourism: {
-      minAmount: 5000,
-      safeMonthsBeforeIntake: 3,
-      cautionMonthsBeforeIntake: 2,
-      riskyMonthsBeforeIntake: 1,
-      requiresHistory: false,
-      teaserNote: "Same Subclass 600 route as visit visa.",
-    },
-    business: {
-      minAmount: 3000,
-      safeMonthsBeforeIntake: 2,
-      cautionMonthsBeforeIntake: 1,
-      riskyMonthsBeforeIntake: 1,
-      requiresHistory: false,
-      teaserNote:
-        "Subclass 600 business stream. ETA not available for Nigerians.",
-    },
-    "permanent-residency": {
-      minAmount: 10000,
-      safeMonthsBeforeIntake: 6,
-      cautionMonthsBeforeIntake: 3,
-      riskyMonthsBeforeIntake: 1,
-      requiresHistory: true,
-      teaserNote:
-        "SkillSelect points-based system. 65 points minimum required.",
-    },
-  },
-  nl: {
-    study: {
-      minAmount: 13200,
-      safeMonthsBeforeIntake: 4,
-      cautionMonthsBeforeIntake: 2,
-      riskyMonthsBeforeIntake: 1,
-      requiresHistory: false,
-      teaserNote:
-        "IND requires funds in your personal account only — not family accounts.",
-    },
-    visit: {
-      minAmount: 840,
-      safeMonthsBeforeIntake: 2,
-      cautionMonthsBeforeIntake: 1,
-      riskyMonthsBeforeIntake: 1,
-      requiresHistory: false,
-      teaserNote:
-        "Schengen visa €70/day. Show accommodation and return flight.",
-    },
-    work: {
-      minAmount: 2500,
-      safeMonthsBeforeIntake: 2,
-      cautionMonthsBeforeIntake: 1,
-      riskyMonthsBeforeIntake: 1,
-      requiresHistory: false,
-      teaserNote:
-        "TWV work permit employer-led. Highly Skilled Migrant route available.",
-    },
-    tourism: {
-      minAmount: 840,
-      safeMonthsBeforeIntake: 2,
-      cautionMonthsBeforeIntake: 1,
-      riskyMonthsBeforeIntake: 1,
-      requiresHistory: false,
-      teaserNote: "Schengen short-stay visa. Apply at VFS Netherlands Lagos.",
-    },
-    business: {
-      minAmount: 1500,
-      safeMonthsBeforeIntake: 2,
-      cautionMonthsBeforeIntake: 1,
-      riskyMonthsBeforeIntake: 1,
-      requiresHistory: false,
-      teaserNote: "Schengen business visa. 90/180 day rule applies.",
-    },
-    "permanent-residency": {
-      minAmount: 3000,
-      safeMonthsBeforeIntake: 6,
-      cautionMonthsBeforeIntake: 3,
-      riskyMonthsBeforeIntake: 1,
-      requiresHistory: true,
-      teaserNote: "5 years residence + NT2 Dutch language exam required.",
-    },
-  },
-  fr: {
-    study: {
-      minAmount: 7380,
-      safeMonthsBeforeIntake: 4,
-      cautionMonthsBeforeIntake: 2,
-      riskyMonthsBeforeIntake: 1,
-      requiresHistory: false,
-      teaserNote:
-        "Campus France registration mandatory before consulate appointment.",
-    },
-    visit: {
-      minAmount: 840,
-      safeMonthsBeforeIntake: 2,
-      cautionMonthsBeforeIntake: 1,
-      riskyMonthsBeforeIntake: 1,
-      requiresHistory: false,
-      teaserNote: "Schengen visa. Apply at VFS France Nigeria.",
-    },
-    work: {
-      minAmount: 2000,
-      safeMonthsBeforeIntake: 2,
-      cautionMonthsBeforeIntake: 1,
-      riskyMonthsBeforeIntake: 1,
-      requiresHistory: false,
-      teaserNote: "OFII medical exam required upon arrival in France.",
-    },
-    tourism: {
-      minAmount: 840,
-      safeMonthsBeforeIntake: 2,
-      cautionMonthsBeforeIntake: 1,
-      riskyMonthsBeforeIntake: 1,
-      requiresHistory: false,
-      teaserNote: "July-August: longest Schengen processing times.",
-    },
-    business: {
-      minAmount: 1500,
-      safeMonthsBeforeIntake: 2,
-      cautionMonthsBeforeIntake: 1,
-      riskyMonthsBeforeIntake: 1,
-      requiresHistory: false,
-      teaserNote:
-        "Schengen business visa. Invitation from French company required.",
-    },
-    "permanent-residency": {
-      minAmount: 3000,
-      safeMonthsBeforeIntake: 6,
-      cautionMonthsBeforeIntake: 3,
-      riskyMonthsBeforeIntake: 1,
-      requiresHistory: true,
-      teaserNote:
-        "Carte de Résident after 5 years. B1 French level recommended.",
-    },
-  },
-  se: {
-    study: {
-      minAmount: 102816,
-      safeMonthsBeforeIntake: 4,
-      cautionMonthsBeforeIntake: 2,
-      riskyMonthsBeforeIntake: 1,
-      requiresHistory: false,
-      teaserNote: "Apply via Migrationsverket portal. Processing 2-4 months.",
-    },
-    visit: {
-      minAmount: 840,
-      safeMonthsBeforeIntake: 2,
-      cautionMonthsBeforeIntake: 1,
-      riskyMonthsBeforeIntake: 1,
-      requiresHistory: false,
-      teaserNote: "Schengen visa through VFS Sweden Nigeria.",
-    },
-    work: {
-      minAmount: 1800,
-      safeMonthsBeforeIntake: 2,
-      cautionMonthsBeforeIntake: 1,
-      riskyMonthsBeforeIntake: 1,
-      requiresHistory: false,
-      teaserNote: "Employer must advertise role in EU first.",
-    },
-    tourism: {
-      minAmount: 840,
-      safeMonthsBeforeIntake: 2,
-      cautionMonthsBeforeIntake: 1,
-      riskyMonthsBeforeIntake: 1,
-      requiresHistory: false,
-      teaserNote: "Apply early for summer travel to Sweden.",
-    },
-    business: {
-      minAmount: 1200,
-      safeMonthsBeforeIntake: 2,
-      cautionMonthsBeforeIntake: 1,
-      riskyMonthsBeforeIntake: 1,
-      requiresHistory: false,
-      teaserNote: "Schengen 90/180 rule applies.",
-    },
-    "permanent-residency": {
-      minAmount: 2500,
-      safeMonthsBeforeIntake: 6,
-      cautionMonthsBeforeIntake: 3,
-      riskyMonthsBeforeIntake: 1,
-      requiresHistory: true,
-      teaserNote: "4 years work permit = eligible for PR.",
-    },
-  },
-  fi: {
-    study: {
-      minAmount: 6720,
-      safeMonthsBeforeIntake: 4,
-      cautionMonthsBeforeIntake: 2,
-      riskyMonthsBeforeIntake: 1,
-      requiresHistory: false,
-      teaserNote: "Apply through Enter Finland portal. Processing 1-3 months.",
-    },
-    visit: {
-      minAmount: 840,
-      safeMonthsBeforeIntake: 2,
-      cautionMonthsBeforeIntake: 1,
-      riskyMonthsBeforeIntake: 1,
-      requiresHistory: false,
-      teaserNote:
-        "Popular for Northern Lights tourism. Apply early for Jan/Feb.",
-    },
-    work: {
-      minAmount: 1800,
-      safeMonthsBeforeIntake: 2,
-      cautionMonthsBeforeIntake: 1,
-      riskyMonthsBeforeIntake: 1,
-      requiresHistory: false,
-      teaserNote: "Finland has shortage of tech, healthcare workers.",
-    },
-    tourism: {
-      minAmount: 840,
-      safeMonthsBeforeIntake: 2,
-      cautionMonthsBeforeIntake: 1,
-      riskyMonthsBeforeIntake: 1,
-      requiresHistory: false,
-      teaserNote: "Schengen visa. Biometrics at VFS Helsinki in Nigeria.",
-    },
-    business: {
-      minAmount: 1200,
-      safeMonthsBeforeIntake: 2,
-      cautionMonthsBeforeIntake: 1,
-      riskyMonthsBeforeIntake: 1,
-      requiresHistory: false,
-      teaserNote: "Schengen 90/180 rule applies.",
-    },
-    "permanent-residency": {
-      minAmount: 2500,
-      safeMonthsBeforeIntake: 6,
-      cautionMonthsBeforeIntake: 3,
-      riskyMonthsBeforeIntake: 1,
-      requiresHistory: true,
-      teaserNote: "4 years continuous lawful stay required.",
-    },
-  },
-  mt: {
-    study: {
-      minAmount: 7800,
-      safeMonthsBeforeIntake: 3,
-      cautionMonthsBeforeIntake: 2,
-      riskyMonthsBeforeIntake: 1,
-      requiresHistory: false,
-      teaserNote:
-        "Identity Malta Agency handles permits. English medium of instruction.",
-    },
-    visit: {
-      minAmount: 840,
-      safeMonthsBeforeIntake: 2,
-      cautionMonthsBeforeIntake: 1,
-      riskyMonthsBeforeIntake: 1,
-      requiresHistory: false,
-      teaserNote: "Malta Schengen visa. Popular for summer beach tourism.",
-    },
-    work: {
-      minAmount: 1500,
-      safeMonthsBeforeIntake: 2,
-      cautionMonthsBeforeIntake: 1,
-      riskyMonthsBeforeIntake: 1,
-      requiresHistory: false,
-      teaserNote: "iGaming, hospitality, financial services growing in Malta.",
-    },
-    tourism: {
-      minAmount: 840,
-      safeMonthsBeforeIntake: 2,
-      cautionMonthsBeforeIntake: 1,
-      riskyMonthsBeforeIntake: 1,
-      requiresHistory: false,
-      teaserNote: "Valletta is UNESCO World Heritage site.",
-    },
-    business: {
-      minAmount: 1200,
-      safeMonthsBeforeIntake: 2,
-      cautionMonthsBeforeIntake: 1,
-      riskyMonthsBeforeIntake: 1,
-      requiresHistory: false,
-      teaserNote: "Strong fintech sector in Malta.",
-    },
-    "permanent-residency": {
-      minAmount: 2000,
-      safeMonthsBeforeIntake: 6,
-      cautionMonthsBeforeIntake: 3,
-      riskyMonthsBeforeIntake: 1,
-      requiresHistory: true,
-      teaserNote:
-        "MPRP requires significant investment. 5-year standard route available.",
-    },
-  },
-  es: {
-    study: {
-      minAmount: 7200,
-      safeMonthsBeforeIntake: 4,
-      cautionMonthsBeforeIntake: 2,
-      riskyMonthsBeforeIntake: 1,
-      requiresHistory: false,
-      teaserNote:
-        "All Nigerian documents must be apostilled. August: Spanish admin closed.",
-    },
-    visit: {
-      minAmount: 840,
-      safeMonthsBeforeIntake: 2,
-      cautionMonthsBeforeIntake: 1,
-      riskyMonthsBeforeIntake: 1,
-      requiresHistory: false,
-      teaserNote:
-        "Spain popular for beach holidays. Processing: 15 calendar days.",
-    },
-    work: {
-      minAmount: 1800,
-      safeMonthsBeforeIntake: 2,
-      cautionMonthsBeforeIntake: 1,
-      riskyMonthsBeforeIntake: 1,
-      requiresHistory: false,
-      teaserNote: "Digital Nomad Visa: €2,160/month income required.",
-    },
-    tourism: {
-      minAmount: 840,
-      safeMonthsBeforeIntake: 2,
-      cautionMonthsBeforeIntake: 1,
-      riskyMonthsBeforeIntake: 1,
-      requiresHistory: false,
-      teaserNote: "Avoid July-August applications — peak processing times.",
-    },
-    business: {
-      minAmount: 1500,
-      safeMonthsBeforeIntake: 2,
-      cautionMonthsBeforeIntake: 1,
-      riskyMonthsBeforeIntake: 1,
-      requiresHistory: false,
-      teaserNote: "August: avoid — Spanish offices closed for vacaciones.",
-    },
-    "permanent-residency": {
-      minAmount: 2500,
-      safeMonthsBeforeIntake: 6,
-      cautionMonthsBeforeIntake: 3,
-      riskyMonthsBeforeIntake: 1,
-      requiresHistory: true,
-      teaserNote: "5 years residence + DELE A2 Spanish language test required.",
-    },
-  },
-};
-
-// FX rates (fallback — real rates come from API post-auth)
-const FX_RATES: Record<string, { parallel: number; cbn: number }> = {
-  GBP: { parallel: 2050, cbn: 1980 },
-  USD: { parallel: 1650, cbn: 1580 },
-  CAD: { parallel: 1220, cbn: 1160 },
-  AUD: { parallel: 1075, cbn: 1020 },
-  EUR: { parallel: 1790, cbn: 1720 },
-  SEK: { parallel: 160, cbn: 152 },
-};
-
-// ─────────────────────────────────────────
-// CONSTANTS — DATES
-// ─────────────────────────────────────────
-
-const MONTH_NAMES = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec",
-];
-
-const FULL_MONTH_NAMES = [
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December",
-];
-
-const INTAKE_MONTHS = FULL_MONTH_NAMES.map((label, i) => ({
-  value: String(i),
-  label,
-}));
-
-const NOW = new Date();
-const CURRENT_MONTH_INDEX = NOW.getMonth();
-const CURRENT_YEAR = NOW.getFullYear();
-
-const INTAKE_YEARS = [
+import {
+  CURRENT_MONTH_INDEX,
   CURRENT_YEAR,
-  CURRENT_YEAR + 1,
-  CURRENT_YEAR + 2,
-  CURRENT_YEAR + 3,
-];
+  INTAKE_YEARS,
+  getMonthsUntilIntake,
+  isMonthDisabled,
+  getTimelineStatus,
+  STATUS_CONFIG,
+} from "@/lib/calculator-helpers";
 
-// ─────────────────────────────────────────
-// HELPERS
-// ─────────────────────────────────────────
-
-function formatNaira(amount: number) {
-  return new Intl.NumberFormat("en-NG", {
-    style: "currency",
-    currency: "NGN",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
-}
-
-function getMonthsUntilIntake(intakeDate: Date) {
-  const now = new Date();
-  return (
-    (intakeDate.getFullYear() - now.getFullYear()) * 12 +
-    (intakeDate.getMonth() - now.getMonth())
-  );
-}
-
-function getTimelineStatus(
-  monthsRemaining: number,
-  safeMonths: number,
-  cautionMonths: number,
-): "safe" | "caution" | "risky" {
-  if (monthsRemaining >= safeMonths) return "safe";
-  if (monthsRemaining >= cautionMonths) return "caution";
-  return "risky";
-}
-
-// Is a given month (0-indexed) in a given year already in the past?
-function isMonthDisabled(monthValue: string, yearValue: string): boolean {
-  if (!yearValue) return false;
-  const year = parseInt(yearValue, 10);
-  const month = parseInt(monthValue, 10);
-  if (year > CURRENT_YEAR) return false;
-  if (year < CURRENT_YEAR) return true;
-  return month < CURRENT_MONTH_INDEX;
-}
-
-// ─────────────────────────────────────────
-// STATUS CONFIG
-// ─────────────────────────────────────────
-
-const STATUS_CONFIG = {
-  safe: {
-    label: "Safe — Good time to start",
-    icon: CheckCircle,
-    className:
-      "border-green-200 bg-green-50 text-green-700 dark:bg-green-950/20 dark:border-green-800 dark:text-green-400",
-    barClass:
-      "bg-green-50 border-green-200 text-green-700 dark:bg-green-950/20 dark:border-green-800 dark:text-green-400",
-  },
-  caution: {
-    label: "Caution — Time is getting tight",
-    icon: Clock,
-    className:
-      "border-yellow-200 bg-yellow-50 text-yellow-700 dark:bg-yellow-950/20 dark:border-yellow-800 dark:text-yellow-400",
-    barClass:
-      "bg-yellow-50 border-yellow-200 text-yellow-700 dark:bg-yellow-950/20 dark:border-yellow-800 dark:text-yellow-400",
-  },
-  risky: {
-    label: "Risky — Very little time left",
-    icon: AlertTriangle,
-    className:
-      "border-red-200 bg-red-50 text-red-700 dark:bg-red-950/20 dark:border-red-800 dark:text-red-400",
-    barClass:
-      "bg-red-50 border-red-200 text-red-700 dark:bg-red-950/20 dark:border-red-800 dark:text-red-400",
-  },
+type Preview = {
+  rule: {
+    minAmountForeign: number;
+    safeBufferMonths: number;
+    cautionBufferMonths: number;
+    riskyBufferMonths: number;
+    requiresHistory: boolean;
+    analysisText: string;
+    amountScope: "TOTAL_ESTIMATE" | "LIVING_COSTS_ONLY" | "VARIABLE_REQUIREMENT";
+    sourceUrl: string | null;
+  };
+  calculation: {
+    currentStatus: "safe" | "caution" | "risky";
+    recommendedNairaTarget: number;
+  };
+  fxRate: {
+    parallelRate: number;
+    lastUpdated: string;
+  };
 };
 
 // ─────────────────────────────────────────
@@ -737,13 +77,22 @@ export default function CalculatorPage() {
   const [intakeMonth, setIntakeMonth] = useState("");
   const [intakeYear, setIntakeYear] = useState("");
   const [showTeaser, setShowTeaser] = useState(false);
+  const [preview, setPreview] = useState<Preview | null>(null);
+  const [generateState, setGenerateState] = useState<"idle" | "loading" | "error">("idle");
+  const [generateError, setGenerateError] = useState("");
 
   const country = COUNTRIES.find((c) => c.id === selectedCountry);
-  const teaser =
-    selectedCountry && selectedPurpose
-      ? TEASER_DATA[selectedCountry]?.[selectedPurpose]
-      : null;
-  const fx = country ? FX_RATES[country.currency] : null;
+  const teaser = preview
+    ? {
+        minAmount: preview.rule.minAmountForeign,
+        safeMonthsBeforeIntake: preview.rule.safeBufferMonths,
+        cautionMonthsBeforeIntake: preview.rule.cautionBufferMonths,
+        riskyMonthsBeforeIntake: preview.rule.riskyBufferMonths,
+        requiresHistory: preview.rule.requiresHistory,
+        teaserNote: preview.rule.analysisText,
+      }
+    : null;
+  const fx = preview?.fxRate ?? null;
 
   // Intake date derived from the two pickers
   const intakeDate = useMemo(() => {
@@ -753,38 +102,146 @@ export default function CalculatorPage() {
 
   const monthsRemaining = intakeDate ? getMonthsUntilIntake(intakeDate) : null;
 
-  const timelineStatus =
-    teaser && monthsRemaining !== null
-      ? getTimelineStatus(
-          monthsRemaining,
-          teaser.safeMonthsBeforeIntake,
-          teaser.cautionMonthsBeforeIntake,
-        )
-      : null;
+  const timelineStatus = preview?.calculation.currentStatus ?? null;
 
-  const nairaTarget =
-    teaser && fx ? Math.ceil(teaser.minAmount * fx.parallel * 1.05) : 0;
+  const nairaTarget = preview?.calculation.recommendedNairaTarget ?? 0;
 
   const canGenerate =
     !!selectedCountry && !!selectedPurpose && !!intakeMonth && !!intakeYear;
 
-  function handleGenerate() {
+  function intakeDateValue() {
+    if (!intakeMonth || !intakeYear) return null;
+    return `${intakeYear}-${String(Number(intakeMonth) + 1).padStart(2, "0")}-01`;
+  }
+
+  async function handleGenerate() {
     if (!canGenerate) return;
-    setShowTeaser(true);
+    const date = intakeDateValue();
+    if (!date) return;
+
+    setGenerateState("loading");
+    setGenerateError("");
+    setShowTeaser(false);
+
+    try {
+      const response = await fetch("/api/calculate-pof", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          countryCode: selectedCountry,
+          purposeSlug: selectedPurpose,
+          intakeDate: date,
+          currentBalance: 0,
+        }),
+      });
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error ?? "Unable to calculate this plan.");
+      }
+
+      setPreview(result.data as Preview);
+      setShowTeaser(true);
+      setGenerateState("idle");
+    } catch (error) {
+      setPreview(null);
+      setGenerateState("error");
+      setGenerateError(
+        error instanceof Error ? error.message : "Unable to calculate this plan.",
+      );
+    }
   }
 
   function handleMonthChange(val: string) {
     setIntakeMonth(val);
+    setPreview(null);
+    setGenerateError("");
     setShowTeaser(false);
   }
 
   function handleYearChange(val: string) {
     setIntakeYear(val);
+    setPreview(null);
+    setGenerateError("");
     // If the previously selected month is now in the past for this year, clear it
     if (intakeMonth && isMonthDisabled(intakeMonth, val)) {
       setIntakeMonth("");
     }
     setShowTeaser(false);
+  }
+
+  type SaveState = "idle" | "saving" | "success" | "error";
+
+  const [currentBalance, setCurrentBalance] = useState("");
+  const [saveState, setSaveState] = useState<SaveState>("idle");
+  const [saveError, setSaveError] = useState("");
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const redirectTimeout = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    setIsAuthenticated(
+      document
+        .querySelector("[data-authenticated]")
+        ?.getAttribute("data-authenticated") === "true",
+    );
+
+    return () => {
+      if (redirectTimeout.current) {
+        clearTimeout(redirectTimeout.current);
+      }
+    };
+  }, []);
+
+  async function handleSave() {
+    if (!selectedCountry || !selectedPurpose || !intakeDate) return;
+    const date = intakeDateValue();
+    if (!date) return;
+
+    const balance = Number(currentBalance.trim());
+
+    if (!Number.isFinite(balance) || balance < 0) {
+      setSaveError("Please enter a valid account balance.");
+      setSaveState("error");
+      return;
+    }
+
+    setSaveError("");
+    setSaveState("saving");
+
+    try {
+      const res = await fetch("/api/save-timeline", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          countryCode: selectedCountry,
+          purposeSlug: selectedPurpose,
+          intakeDate: date,
+          currentBalance: balance,
+        }),
+      });
+
+      const json = await res.json();
+
+      if (!res.ok || !json.success) {
+        throw new Error(json.error ?? "Unable to save strategy.");
+      }
+
+      setSaveState("success");
+
+      redirectTimeout.current = setTimeout(() => {
+        router.push(`/dashboard/${json.data.slug}`);
+      }, 1500);
+    } catch (err) {
+      console.error(err);
+
+      setSaveState("error");
+
+      setSaveError(
+        err instanceof Error ? err.message : "Something went wrong.",
+      );
+    }
   }
 
   return (
@@ -819,8 +276,8 @@ export default function CalculatorPage() {
           </h1>
           <p className="text-muted-foreground max-w-2xl mx-auto">
             Select your destination, visa purpose, and intake date to see your
-            exact Naira target and preparation timeline — based on real parallel
-            market rates.
+            indicative Naira target and planning timeline using the latest
+            stored rate and a source-checked base requirement.
           </p>
         </div>
 
@@ -843,6 +300,8 @@ export default function CalculatorPage() {
                   value={selectedCountry}
                   onValueChange={(val) => {
                     setSelectedCountry(val);
+                    setPreview(null);
+                    setGenerateError("");
                     setShowTeaser(false);
                   }}
                 >
@@ -866,6 +325,8 @@ export default function CalculatorPage() {
                   value={selectedPurpose}
                   onValueChange={(val) => {
                     setSelectedPurpose(val);
+                    setPreview(null);
+                    setGenerateError("");
                     setShowTeaser(false);
                   }}
                 >
@@ -935,18 +396,33 @@ export default function CalculatorPage() {
 
             <Button
               onClick={handleGenerate}
-              disabled={!canGenerate}
+              disabled={!canGenerate || generateState === "loading"}
               className="w-full"
               size="lg"
             >
-              Generate My POF Timeline
-              <ArrowRight className="w-4 h-4 ml-2" />
+              {generateState === "loading" ? (
+                <>
+                  <Loader2 className="mr-2 size-4 animate-spin" />
+                  Checking current rule...
+                </>
+              ) : (
+                <>
+                  Generate My POF Timeline
+                  <ArrowRight className="ml-2 size-4" />
+                </>
+              )}
             </Button>
+            {generateError ? (
+              <p role="alert" className="text-sm text-destructive">
+                {generateError}
+              </p>
+            ) : null}
           </CardContent>
         </Card>
 
         {/* Teaser Results */}
         {showTeaser &&
+          preview &&
           teaser &&
           country &&
           fx &&
@@ -961,7 +437,7 @@ export default function CalculatorPage() {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between flex-wrap gap-4">
                     <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-xl bg-background/60 border border-current/20 flex items-center justify-center flex-shrink-0">
+                      <div className="w-12 h-12 rounded-xl bg-background/60 border border-current/20 flex items-center justify-center shrink-0">
                         <CalendarClock className="w-6 h-6" />
                       </div>
                       <div>
@@ -996,11 +472,11 @@ export default function CalculatorPage() {
                   {/* Contextual note based on status */}
                   <p className="text-sm mt-4 leading-relaxed opacity-80">
                     {timelineStatus === "safe" &&
-                      `You're ahead of schedule. The recommended preparation window for ${country.name} — ${PURPOSES.find((p) => p.id === selectedPurpose)?.name} starts ${teaser.safeMonthsBeforeIntake} months before intake. Start building your account history now.`}
+                      `Your selected date leaves a wider planning window. Smarrrt's preparation heuristic begins ${teaser.safeMonthsBeforeIntake} months before intake, giving you more time to confirm the official requirements and organise your evidence.`}
                     {timelineStatus === "caution" &&
-                      `Time is getting tight. Ideally preparation should have started ${teaser.safeMonthsBeforeIntake} months before intake — you now have ${monthsRemaining} month${monthsRemaining === 1 ? "" : "s"}. It can still work, but every deposit from now on matters.`}
+                      `Your selected date leaves a shorter planning window: ${monthsRemaining} month${monthsRemaining === 1 ? "" : "s"}. Confirm the official requirements and deadlines now, then decide whether the remaining preparation time works for you.`}
                     {timelineStatus === "risky" &&
-                      `This is a high-risk window. With ${monthsRemaining <= 0 ? "no time" : `only ${monthsRemaining} month${monthsRemaining === 1 ? "" : "s"}`} left, building a credible financial history will be very difficult. Consider whether a later intake is more realistic.`}
+                      `This is a very short planning window, with ${monthsRemaining <= 0 ? "less than one full month" : `only ${monthsRemaining} month${monthsRemaining === 1 ? "" : "s"}`} left. Recheck the official deadline and evidence requirements; a later intake may offer more preparation time. This signal does not predict an application outcome.`}
                   </p>
                 </CardContent>
               </Card>
@@ -1010,7 +486,7 @@ export default function CalculatorPage() {
                 <Card className="border-primary/20 bg-primary/5">
                   <CardContent className="p-4">
                     <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">
-                      POF Required
+                      Base living funds
                     </p>
                     <p className="text-lg font-bold naira-amount">
                       {country.currency} {teaser.minAmount.toLocaleString()}
@@ -1020,17 +496,20 @@ export default function CalculatorPage() {
                 <Card className="border-border">
                   <CardContent className="p-4">
                     <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">
-                      Parallel Rate
+                      Indicative rate
                     </p>
                     <p className="text-lg font-bold naira-amount">
-                      ₦{fx.parallel.toLocaleString()}
+                      ₦{fx.parallelRate.toLocaleString()}
+                    </p>
+                    <p className="mt-1 text-[11px] text-muted-foreground">
+                      Stored {new Date(fx.lastUpdated).toLocaleDateString("en-NG")}
                     </p>
                   </CardContent>
                 </Card>
                 <Card className="border-yellow-200 bg-yellow-50 dark:bg-yellow-950/20">
                   <CardContent className="p-4">
                     <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">
-                      Naira Target
+                      Estimated base target
                     </p>
                     <p className="text-lg font-bold naira-amount text-yellow-700 dark:text-yellow-400">
                       {formatNaira(nairaTarget)}
@@ -1041,8 +520,8 @@ export default function CalculatorPage() {
 
               {/* Teaser note */}
               <Card className="border-border">
-                <CardContent className="p-4 flex gap-3">
-                  <AlertTriangle className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                <CardContent className="p-4 flex flex-wrap gap-3">
+                  <AlertTriangle className="w-5 h-5 text-primary shrink-0 mt-0.5" />
                   <p className="text-sm text-muted-foreground leading-relaxed">
                     <strong className="text-foreground">
                       {country.flag} {country.name} —{" "}
@@ -1051,6 +530,16 @@ export default function CalculatorPage() {
                     </strong>{" "}
                     {teaser.teaserNote}
                   </p>
+                  {preview.rule.sourceUrl ? (
+                    <a
+                      href={preview.rule.sourceUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="ml-8 inline-flex text-sm font-medium text-primary underline-offset-4 hover:underline"
+                    >
+                      Review the official requirement source
+                    </a>
+                  ) : null}
                 </CardContent>
               </Card>
 
@@ -1112,17 +601,17 @@ export default function CalculatorPage() {
                     {
                       status: "safe" as const,
                       icon: CheckCircle,
-                      label: "Safe — Start now",
+                      label: "More runway",
                     },
                     {
                       status: "caution" as const,
                       icon: Clock,
-                      label: "Caution — Getting tight",
+                      label: "Shorter window",
                     },
                     {
                       status: "risky" as const,
                       icon: AlertTriangle,
-                      label: "Risky — Too late",
+                      label: "Very short window",
                     },
                   ].map((item) => (
                     <div
@@ -1148,51 +637,160 @@ export default function CalculatorPage() {
               {teaser.requiresHistory && (
                 <Card className="border-red-200 bg-red-50 dark:bg-red-950/20">
                   <CardContent className="p-4 flex gap-3">
-                    <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                    <AlertTriangle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
                     <div>
                       <p className="text-sm font-bold text-red-700 dark:text-red-400 mb-1">
-                        Lump Sum Risk — Account History Required
+                        Funding history needs supporting evidence
                       </p>
                       <p className="text-sm text-red-600 dark:text-red-500">
-                        This embassy actively checks for sudden large deposits.
-                        You need {teaser.safeMonthsBeforeIntake}+ months of
-                        organic account history. A last-minute lump sum will
-                        trigger a rejection.
+                        Keep documents that explain material deposits and the
+                        source of funds. The preparation months shown here are
+                        Smarrrt planning guidance, not an official holding rule.
                       </p>
                     </div>
                   </CardContent>
                 </Card>
               )}
 
-              {/* Gate — Sign up CTA */}
-              <Card className="border-primary/30 bg-foreground">
+              {/* Gate — Sign up CTA or Save button */}
+              <Card className="border-primary/30 bg-gradient-to-br from-primary/5 via-background to-background shadow-sm">
                 <CardContent className="p-8 text-center space-y-4">
                   <div className="flex justify-center gap-3 mb-2">
                     <TrendingUp className="w-6 h-6 text-primary" />
                     <Shield className="w-6 h-6 text-primary" />
                     <Calculator className="w-6 h-6 text-primary" />
                   </div>
-                  <h3 className="text-xl font-bold text-background">
-                    Your full POF strategy is ready
-                  </h3>
-                  <p className="text-background/60 text-sm max-w-md mx-auto">
-                    Create a free account to unlock your complete 12-month
-                    calendar, Statement Health Analyzer, monthly deposit plan,
-                    and Nigerian-specific embassy intelligence.
-                  </p>
-                  <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                    <Button
-                      onClick={() => router.push("/signin")}
-                      size="lg"
-                      className="text-base"
-                    >
-                      Unlock Full Strategy — Free
-                      <ArrowRight className="w-4 h-4 ml-2" />
-                    </Button>
-                  </div>
-                  <p className="text-xs text-background/40">
-                    No credit card. No spam. Takes 10 seconds with Google.
-                  </p>
+
+                  {isAuthenticated ? (
+                    // ── LOGGED IN — Show save button ──
+                    <>
+                      <h3 className="text-xl font-bold text-background">
+                        Save this strategy
+                      </h3>
+
+                      <p className="text-background/60 text-sm max-w-md mx-auto">
+                        Continue where you left off. Your dashboard includes
+                        your preparation timeline, Funding Pace Planner, and
+                        source-linked rule references.
+                      </p>
+
+                      <div className="max-w-sm mx-auto space-y-2 text-left">
+                        <div className="rounded-xl border bg-background/60 p-4 text-left space-y-2">
+                          <p className="text-sm font-semibold">
+                            Strategy Summary
+                          </p>
+
+                          <div className="grid gap-1 text-sm text-muted-foreground">
+                            <p>
+                              🌍 {country?.flag} {country?.name}
+                            </p>
+
+                            <p>
+                              🎯{" "}
+                              {
+                                PURPOSES.find((p) => p.id === selectedPurpose)
+                                  ?.name
+                              }
+                            </p>
+
+                            <p>
+                              📅 {FULL_MONTH_NAMES[intakeDate.getMonth()]}{" "}
+                              {intakeDate.getFullYear()}
+                            </p>
+
+                            <p>💰 Target: {formatNaira(nairaTarget)}</p>
+                          </div>
+                        </div>
+
+                        <label className="text-sm font-medium text-background/80">
+                          Current Account Balance (₦)
+                        </label>
+
+                        <input
+                          type="number"
+                          min={0}
+                          value={currentBalance}
+                          placeholder="5000000"
+                          onChange={(e) => {
+                            setCurrentBalance(e.target.value);
+
+                            if (saveState === "error") {
+                              setSaveState("idle");
+                              setSaveError("");
+                            }
+                          }}
+                          className="w-full rounded-lg border border-background/20 bg-background/10 px-4 py-3 text-background placeholder:text-background/40 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
+                        />
+
+                        {saveError && (
+                          <p className="text-sm text-red-400">{saveError}</p>
+                        )}
+                      </div>
+
+                      <div className="flex flex-col sm:flex-row justify-center gap-3">
+                        <Button
+                          size="lg"
+                          onClick={handleSave}
+                          disabled={
+                            saveState === "saving" ||
+                            currentBalance.trim() === ""
+                          }
+                        >
+                          {saveState === "saving" ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              Saving Strategy...
+                            </>
+                          ) : saveState === "success" ? (
+                            <>
+                              <CheckCircle2 className="w-4 h-4 mr-2" />
+                              Strategy Saved
+                            </>
+                          ) : (
+                            <>
+                              Save Strategy
+                              <ArrowRight className="ml-2 h-4 w-4" />
+                            </>
+                          )}
+                        </Button>
+
+                        {saveState === "success" && (
+                          <Button
+                            variant="outline"
+                            size="lg"
+                            onClick={() => router.push("/dashboard")}
+                          >
+                            Open Dashboard
+                          </Button>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    // ── NOT LOGGED IN — Show signup gate ──
+                    <>
+                      <h3 className="text-xl font-bold text-background">
+                        Your full POF strategy is ready
+                      </h3>
+                      <p className="text-background/60 text-sm max-w-md mx-auto">
+                        Create a free account to unlock your complete 12-month
+                        calendar, Funding Pace Planner, monthly funding
+                        estimate, and source-linked rule references.
+                      </p>
+                      <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                        <Button
+                          onClick={() => router.push("/signin")}
+                          size="lg"
+                          className="text-base"
+                        >
+                          Unlock Full Strategy — Free
+                          <ArrowRight className="w-4 h-4 ml-2" />
+                        </Button>
+                      </div>
+                      <p className="text-xs text-background/40">
+                        No credit card. No spam. Sign in to save your strategy.
+                      </p>
+                    </>
+                  )}
                 </CardContent>
               </Card>
             </div>

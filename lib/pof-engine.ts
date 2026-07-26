@@ -25,22 +25,34 @@ const MONTH_NAMES = [
   "December",
 ];
 
-const FX_BUFFER_PERCENT = 0.05; // 5% buffer on parallel rate
-const LUMP_SUM_THRESHOLD = 0.4; // monthly deposit > 40% of balance = lump sum risk
+const FX_BUFFER_PERCENT = 0.05; // Product planning buffer, not an official rule.
+const CONTRIBUTION_CONCENTRATION_THRESHOLD = 0.4;
 
 // ─────────────────────────────────────────
 // CORE DATE CALCULATION
 // ─────────────────────────────────────────
 
 function subtractMonths(date: Date, months: number): Date {
-  const result = new Date(date);
-  result.setMonth(result.getMonth() - months);
-  return result;
+  return new Date(
+    Date.UTC(date.getUTCFullYear(), date.getUTCMonth() - months, 1, 12),
+  );
 }
 
-function getMonthKey(date: Date): string {
-  // Returns "YYYY-MM" for easy comparison
-  return `${date.getFullYear()}-${String(date.getMonth()).padStart(2, "0")}`;
+function monthValue(date: Date): number {
+  return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1);
+}
+
+function wholeMonthsBetween(start: Date, end: Date): number {
+  if (end <= start) return 0;
+
+  let months =
+    (end.getUTCFullYear() - start.getUTCFullYear()) * 12 +
+    end.getUTCMonth() -
+    start.getUTCMonth();
+
+  if (end.getUTCDate() < start.getUTCDate()) months -= 1;
+
+  return Math.max(0, months);
 }
 
 // ─────────────────────────────────────────
@@ -54,11 +66,11 @@ function resolveMonthStatus(
   riskyStartDate: Date,
   intakeDate: Date,
 ): PofStatus {
-  const m = monthDate.getTime();
-  const safe = safeStartDate.getTime();
-  const caution = cautionStartDate.getTime();
-  const risky = riskyStartDate.getTime();
-  const intake = intakeDate.getTime();
+  const m = monthValue(monthDate);
+  const safe = monthValue(safeStartDate);
+  const caution = monthValue(cautionStartDate);
+  const risky = monthValue(riskyStartDate);
+  const intake = monthValue(intakeDate);
 
   if (m >= intake) return "risky"; // past intake date
   if (m <= safe) return "safe"; // before or at safe start
@@ -75,21 +87,21 @@ function generateMonthNote(
   status: PofStatus,
   monthName: string,
   rule: PofRule,
-  isIntakeMonth: boolean,
+  isTargetIntakeMonth: boolean,
 ): string {
-  if (isIntakeMonth) {
-    return `${monthName} is your target intake month. Your funds must already be fully seasoned and sitting in your account by now.`;
+  if (isTargetIntakeMonth) {
+    return `${monthName} is your selected intake month. Review the official funding and evidence requirements well before this point.`;
   }
 
   switch (status) {
     case "safe":
-      return `${monthName} is an ideal time to begin building your account balance. Start making consistent monthly deposits now to establish a credible financial history.`;
+      return `${monthName} is within the earlier planning window. Starting now leaves more time to build the target and prepare any required evidence.`;
     case "caution":
       return rule.requiresHistory
-        ? `${monthName} is getting tight. Embassies like ${rule.countryId} scrutinise account history closely. You need to accelerate deposits carefully without triggering lump sum flags.`
-        : `${monthName} is within range but leaves little buffer. Ensure funds are in place and avoid any large unexplained transactions.`;
+        ? `${monthName} leaves less time to assemble the requested funding evidence. Keep a clear record of the source and availability of funds.`
+        : `${monthName} leaves less planning buffer. Confirm the required amount and evidence with the official source.`;
     case "risky":
-      return `${monthName} is a high-risk period to be starting your preparation. A sudden large deposit now will almost certainly raise financial manipulation flags with the embassy. Proceed with extreme caution.`;
+      return `${monthName} leaves limited preparation time. Check the official evidence requirements and consider whether a later intake is more realistic.`;
   }
 }
 
@@ -134,11 +146,12 @@ function analyzeStatementHealth(
   const safeMonthlyDeposit =
     monthsAvailable > 0 ? Math.ceil(deficit / monthsAvailable) : deficit;
 
-  // Lump sum risk: if required monthly deposit exceeds
-  // 40% of current balance it looks suspicious to embassy
+  // This ratio drives a clearly labelled product planning heuristic. It does
+  // not predict how an authority will assess the account or application.
   const lumpSumRisk =
     currentBalanceNaira > 0
-      ? safeMonthlyDeposit / currentBalanceNaira > LUMP_SUM_THRESHOLD
+      ? safeMonthlyDeposit / currentBalanceNaira >
+        CONTRIBUTION_CONCENTRATION_THRESHOLD
       : true;
 
   return { safeMonthlyDeposit, lumpSumRisk };
@@ -154,17 +167,17 @@ function generateMonthlyBreakdown(
   cautionStartDate: Date,
   riskyStartDate: Date,
   rule: PofRule,
-  intakeMonths: number[], // e.g. [1, 5, 9] for Jan, May, Sep
+  asOfDate: Date,
 ): MonthStatus[] {
   const breakdown: MonthStatus[] = [];
-  const today = new Date();
-  console.log(today);
 
-  // Generate 12 months starting from current month
+  // Generate 12 months starting from the calculation's as-of month.
   for (let i = 0; i < 12; i++) {
-    const monthDate = new Date(today.getFullYear(), today.getMonth() + i, 1);
-    const monthNumber = monthDate.getMonth() + 1; // 1-indexed
-    const isIntakeMonth = intakeMonths.includes(monthNumber);
+    const monthDate = new Date(
+      Date.UTC(asOfDate.getUTCFullYear(), asOfDate.getUTCMonth() + i, 1, 12),
+    );
+    const isTargetIntakeMonth =
+      monthValue(monthDate) === monthValue(intakeDate);
 
     const status = resolveMonthStatus(
       monthDate,
@@ -174,14 +187,20 @@ function generateMonthlyBreakdown(
       intakeDate,
     );
 
-    const monthName = MONTH_NAMES[monthDate.getMonth()];
+    const monthName = MONTH_NAMES[monthDate.getUTCMonth()];
 
     breakdown.push({
-      month: monthDate.getMonth(), // 0-indexed for frontend
+      month: monthDate.getUTCMonth(), // 0-indexed for frontend
       monthName,
+      year: monthDate.getUTCFullYear(),
       status,
-      note: generateMonthNote(status, monthName, rule, isIntakeMonth),
-      isIntakeMonth,
+      note: generateMonthNote(
+        status,
+        monthName,
+        rule,
+        isTargetIntakeMonth,
+      ),
+      isIntakeMonth: isTargetIntakeMonth,
     });
   }
 
@@ -197,14 +216,14 @@ export function calculatePof(params: {
   fxRate: FxRate;
   intakeDate: Date;
   currentBalanceNaira: number;
-  intakeMonths?: number[];
+  asOfDate?: Date;
 }): PofCalculationResult {
   const {
     rule,
     fxRate,
     intakeDate,
     currentBalanceNaira,
-    intakeMonths = [],
+    asOfDate = new Date(),
   } = params;
 
   // Step 1 — Calculate buffer dates backward from intake
@@ -213,9 +232,8 @@ export function calculatePof(params: {
   const riskyStartDate = subtractMonths(intakeDate, rule.riskyBufferMonths);
 
   // Step 2 — Resolve current month status
-  const today = new Date();
   const currentStatus = resolveMonthStatus(
-    today,
+    asOfDate,
     safeStartDate,
     cautionStartDate,
     riskyStartDate,
@@ -227,11 +245,7 @@ export function calculatePof(params: {
     calculateNairaTargets(rule.minAmountForeign, fxRate);
 
   // Step 4 — Months available from today to intake
-  const monthsAvailable = Math.max(
-    0,
-    (intakeDate.getFullYear() - today.getFullYear()) * 12 +
-      (intakeDate.getMonth() - today.getMonth()),
-  );
+  const monthsAvailable = wholeMonthsBetween(asOfDate, intakeDate);
 
   // Step 5 — Statement health analysis
   const { safeMonthlyDeposit, lumpSumRisk } = analyzeStatementHealth(
@@ -247,7 +261,7 @@ export function calculatePof(params: {
     cautionStartDate,
     riskyStartDate,
     rule,
-    intakeMonths,
+    asOfDate,
   );
 
   return {

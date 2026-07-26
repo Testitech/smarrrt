@@ -4,18 +4,261 @@ import { Pool } from "pg";
 import { createId } from "@paralleldrive/cuid2";
 import "dotenv/config";
 
+const CONNECTION_TIMEOUT_MS = 10_000;
+
+function getDirectDatabaseUrl() {
+  const value =
+    process.env.DIRECT_URL?.trim() || process.env.DATABASE_URL?.trim();
+
+  if (!value) {
+    throw new Error(
+      "DIRECT_URL or DATABASE_URL is required to seed the database. Add a direct PostgreSQL connection URL to your environment.",
+    );
+  }
+
+  let parsedUrl: URL;
+
+  try {
+    parsedUrl = new URL(value);
+  } catch {
+    throw new Error(
+      "DATABASE_URL is invalid. PrismaPg requires a valid direct PostgreSQL URL.",
+    );
+  }
+
+  if (!["postgres:", "postgresql:"].includes(parsedUrl.protocol)) {
+    throw new Error(
+      `DATABASE_URL must use postgres:// or postgresql:// for PrismaPg; received ${parsedUrl.protocol || "an unknown protocol"}.`,
+    );
+  }
+
+  if (!parsedUrl.hostname) {
+    throw new Error("DATABASE_URL must include a PostgreSQL host.");
+  }
+
+  return value;
+}
+
+const databaseUrl = getDirectDatabaseUrl();
+
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false,
-  },
+  connectionString: databaseUrl,
+  connectionTimeoutMillis: CONNECTION_TIMEOUT_MS,
 });
 
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
+type PofRuleSeed = {
+  where: {
+    countryId_purposeId: {
+      countryId: string;
+      purposeId: string;
+    };
+  };
+  create: {
+    id: string;
+    countryId: string;
+    purposeId: string;
+    safeBufferMonths: number;
+    cautionBufferMonths: number;
+    riskyBufferMonths: number;
+    minAmountForeign: number;
+    requiresHistory: boolean;
+    statementMonths: number | null;
+    analysisText: string;
+    nigerianSpecific: string;
+  };
+  metadata: {
+    isActive: boolean;
+    ruleVersion: string;
+    holdingPeriodDays: number | null;
+    documentMaxAgeDays: number | null;
+    amountScope:
+      | "TOTAL_ESTIMATE"
+      | "LIVING_COSTS_ONLY"
+      | "VARIABLE_REQUIREMENT";
+    sourceUrl: string;
+    sourceCheckedAt: Date;
+    effectiveFrom: Date | null;
+    effectiveTo: Date | null;
+  };
+};
+
+async function upsertPofRule({ where, create, metadata }: PofRuleSeed) {
+  return prisma.pofRule.upsert({
+    where,
+    update: {
+      safeBufferMonths: create.safeBufferMonths,
+      cautionBufferMonths: create.cautionBufferMonths,
+      riskyBufferMonths: create.riskyBufferMonths,
+      minAmountForeign: create.minAmountForeign,
+      requiresHistory: create.requiresHistory,
+      statementMonths: create.statementMonths,
+      analysisText: create.analysisText,
+      nigerianSpecific: create.nigerianSpecific,
+      ...metadata,
+    },
+    create: { ...create, ...metadata },
+  });
+}
+
+const SOURCE_CHECKED_AT = new Date("2026-07-22T00:00:00.000Z");
+
+const RULE_METADATA = {
+  GB_STUDY: {
+    isActive: false,
+    ruleVersion: "2026-07-gb-study-variable",
+    holdingPeriodDays: 28,
+    documentMaxAgeDays: 31,
+    amountScope: "VARIABLE_REQUIREMENT",
+    sourceUrl: "https://www.gov.uk/student-visa/money",
+    sourceCheckedAt: SOURCE_CHECKED_AT,
+    effectiveFrom: null,
+    effectiveTo: null,
+  },
+  GB_VISIT: {
+    isActive: false,
+    ruleVersion: "2026-07-gb-visit-variable",
+    holdingPeriodDays: null,
+    documentMaxAgeDays: null,
+    amountScope: "VARIABLE_REQUIREMENT",
+    sourceUrl:
+      "https://www.gov.uk/guidance/immigration-rules/immigration-rules-appendix-v-visitor",
+    sourceCheckedAt: SOURCE_CHECKED_AT,
+    effectiveFrom: null,
+    effectiveTo: null,
+  },
+  US_STUDY: {
+    isActive: false,
+    ruleVersion: "2026-07-us-study-i20",
+    holdingPeriodDays: null,
+    documentMaxAgeDays: null,
+    amountScope: "VARIABLE_REQUIREMENT",
+    sourceUrl:
+      "https://travel.state.gov/content/travel/en/us-visas/study/student-visa.html",
+    sourceCheckedAt: SOURCE_CHECKED_AT,
+    effectiveFrom: null,
+    effectiveTo: null,
+  },
+  CA_STUDY: {
+    isActive: true,
+    ruleVersion: "2026-07-ca-study-base",
+    holdingPeriodDays: null,
+    documentMaxAgeDays: null,
+    amountScope: "LIVING_COSTS_ONLY",
+    sourceUrl:
+      "https://www.canada.ca/en/immigration-refugees-citizenship/services/study-canada/study-permit/get-documents/financial-support.html",
+    sourceCheckedAt: SOURCE_CHECKED_AT,
+    effectiveFrom: new Date("2025-09-01T00:00:00.000Z"),
+    effectiveTo: null,
+  },
+  AU_STUDY: {
+    isActive: true,
+    ruleVersion: "2026-07-au-study-base",
+    holdingPeriodDays: null,
+    documentMaxAgeDays: null,
+    amountScope: "LIVING_COSTS_ONLY",
+    sourceUrl:
+      "https://immi.homeaffairs.gov.au/Visa-subsite/Pages/student/500-student.aspx",
+    sourceCheckedAt: SOURCE_CHECKED_AT,
+    effectiveFrom: null,
+    effectiveTo: null,
+  },
+  NL_STUDY: {
+    isActive: true,
+    ruleVersion: "2026-nl-study-base",
+    holdingPeriodDays: null,
+    documentMaxAgeDays: 92,
+    amountScope: "LIVING_COSTS_ONLY",
+    sourceUrl: "https://ind.nl/en/required-amounts-income-requirements",
+    sourceCheckedAt: SOURCE_CHECKED_AT,
+    effectiveFrom: new Date("2026-01-01T00:00:00.000Z"),
+    effectiveTo: new Date("2026-12-31T23:59:59.999Z"),
+  },
+  FI_STUDY: {
+    isActive: true,
+    ruleVersion: "2026-07-fi-study-base",
+    holdingPeriodDays: null,
+    documentMaxAgeDays: null,
+    amountScope: "LIVING_COSTS_ONLY",
+    sourceUrl: "https://migri.fi/en/income-requirement-for-students",
+    sourceCheckedAt: SOURCE_CHECKED_AT,
+    effectiveFrom: null,
+    effectiveTo: null,
+  },
+  FR_STUDY: {
+    isActive: false,
+    ruleVersion: "2026-08-fr-study-base",
+    holdingPeriodDays: null,
+    documentMaxAgeDays: null,
+    amountScope: "LIVING_COSTS_ONLY",
+    sourceUrl: "https://france-visas.gouv.fr/en/web/france-visas",
+    sourceCheckedAt: SOURCE_CHECKED_AT,
+    effectiveFrom: new Date("2026-08-01T00:00:00.000Z"),
+    effectiveTo: null,
+  },
+  SE_STUDY: {
+    isActive: true,
+    ruleVersion: "2026-se-study-base",
+    holdingPeriodDays: null,
+    documentMaxAgeDays: 123,
+    amountScope: "LIVING_COSTS_ONLY",
+    sourceUrl:
+      "https://www.migrationsverket.se/en/you-want-to-apply/study/higher-education.html",
+    sourceCheckedAt: SOURCE_CHECKED_AT,
+    effectiveFrom: new Date("2026-01-01T00:00:00.000Z"),
+    effectiveTo: new Date("2026-12-31T23:59:59.999Z"),
+  },
+  MT_STUDY: {
+    isActive: false,
+    ruleVersion: "2026-07-mt-study-variable",
+    holdingPeriodDays: null,
+    documentMaxAgeDays: null,
+    amountScope: "VARIABLE_REQUIREMENT",
+    sourceUrl:
+      "https://identita.gov.mt/frequently-asked-questions/expatriates/non-eu-non-employment/general-queries/",
+    sourceCheckedAt: SOURCE_CHECKED_AT,
+    effectiveFrom: null,
+    effectiveTo: null,
+  },
+  ES_STUDY: {
+    isActive: false,
+    ruleVersion: "2026-es-study-duration",
+    holdingPeriodDays: null,
+    documentMaxAgeDays: null,
+    amountScope: "LIVING_COSTS_ONLY",
+    sourceUrl: "https://inclusion.gob.es/en/web/migraciones/w/estancia-por-estudios",
+    sourceCheckedAt: SOURCE_CHECKED_AT,
+    effectiveFrom: new Date("2026-01-01T00:00:00.000Z"),
+    effectiveTo: new Date("2026-12-31T23:59:59.999Z"),
+  },
+} as const;
+
+async function verifyDatabaseConnection() {
+  try {
+    const result = await pool.query<{ connected: number }>(
+      "SELECT 1 AS connected",
+    );
+
+    if (result.rows[0]?.connected !== 1) {
+      throw new Error("The database returned an unexpected health-check result.");
+    }
+
+    console.log("✅ Database connection verified");
+  } catch (error) {
+    const detail = error instanceof Error ? ` ${error.message}` : "";
+
+    throw new Error(
+      `Database connection check failed (timeout: ${CONNECTION_TIMEOUT_MS}ms). Verify that DATABASE_URL is a reachable direct PostgreSQL URL.${detail}`,
+      { cause: error },
+    );
+  }
+}
+
 async function main() {
   console.log("🌱 Seeding Smarrrt database...");
+  await verifyDatabaseConnection();
 
   // ─────────────────────────────────────────
   // VISA PURPOSES
@@ -25,7 +268,13 @@ async function main() {
 
   const studyPurpose = await prisma.visaPurpose.upsert({
     where: { slug: "study" },
-    update: {},
+    update: {
+      name: "Study",
+      icon: "🎓",
+      description:
+        "Student visa for undergraduate, postgraduate or language courses",
+      isActive: true,
+    },
     create: {
       id: createId(),
       name: "Study",
@@ -39,7 +288,12 @@ async function main() {
 
   const workPurpose = await prisma.visaPurpose.upsert({
     where: { slug: "work" },
-    update: {},
+    update: {
+      name: "Work",
+      icon: "💼",
+      description: "Work permit or skilled worker visa",
+      isActive: true,
+    },
     create: {
       id: createId(),
       name: "Work",
@@ -52,7 +306,12 @@ async function main() {
 
   const visitPurpose = await prisma.visaPurpose.upsert({
     where: { slug: "visit" },
-    update: {},
+    update: {
+      name: "Visit",
+      icon: "✈️",
+      description: "Short stay visit visa for family or friends",
+      isActive: true,
+    },
     create: {
       id: createId(),
       name: "Visit",
@@ -65,7 +324,12 @@ async function main() {
 
   const tourismPurpose = await prisma.visaPurpose.upsert({
     where: { slug: "tourism" },
-    update: {},
+    update: {
+      name: "Tourism",
+      icon: "🏖️",
+      description: "Tourist visa for leisure travel",
+      isActive: true,
+    },
     create: {
       id: createId(),
       name: "Tourism",
@@ -78,7 +342,12 @@ async function main() {
 
   const businessPurpose = await prisma.visaPurpose.upsert({
     where: { slug: "business" },
-    update: {},
+    update: {
+      name: "Business",
+      icon: "🤝",
+      description: "Business visa for conferences, meetings or trade",
+      isActive: true,
+    },
     create: {
       id: createId(),
       name: "Business",
@@ -91,7 +360,12 @@ async function main() {
 
   const prPurpose = await prisma.visaPurpose.upsert({
     where: { slug: "permanent-residency" },
-    update: {},
+    update: {
+      name: "Permanent Residency",
+      icon: "🏡",
+      description: "Permanent residency or settlement application",
+      isActive: true,
+    },
     create: {
       id: createId(),
       name: "Permanent Residency",
@@ -113,6 +387,28 @@ async function main() {
   console.log(`✅ ${purposes.length} visa purposes seeded`);
 
   // ─────────────────────────────────────────
+  // FX RATES
+  // Countries reference these rows, so they must exist first.
+  // ─────────────────────────────────────────
+
+  console.log("Seeding FX rates...");
+
+  const fxRates = [
+    { currencyCode: "GBP", cbnRate: 1980, parallelRate: 2050, source: "seed-reference", isIndicative: true },
+    { currencyCode: "USD", cbnRate: 1580, parallelRate: 1650, source: "seed-reference", isIndicative: true },
+    { currencyCode: "CAD", cbnRate: 1160, parallelRate: 1220, source: "seed-reference", isIndicative: true },
+    { currencyCode: "EUR", cbnRate: 1720, parallelRate: 1790, source: "seed-reference", isIndicative: true },
+    { currencyCode: "AUD", cbnRate: 1020, parallelRate: 1075, source: "seed-reference", isIndicative: true },
+    { currencyCode: "SEK", cbnRate: 152, parallelRate: 160, source: "seed-reference", isIndicative: true },
+  ] as const;
+
+  // Never overwrite operational quotes or refresh their timestamps during a
+  // seed. These rows are only a clearly-labelled first-run reference set.
+  await prisma.fxRate.createMany({ data: [...fxRates], skipDuplicates: true });
+
+  console.log(`✅ ${fxRates.length} FX rates seeded`);
+
+  // ─────────────────────────────────────────
   // COUNTRIES
   // ─────────────────────────────────────────
 
@@ -120,7 +416,12 @@ async function main() {
 
   const gbCountry = await prisma.country.upsert({
     where: { isoCode: "GB" },
-    update: {},
+    update: {
+      name: "United Kingdom",
+      currencyCode: "GBP",
+      flagEmoji: "🇬🇧",
+      isActive: true,
+    },
     create: {
       id: createId(),
       name: "United Kingdom",
@@ -133,7 +434,12 @@ async function main() {
 
   const usCountry = await prisma.country.upsert({
     where: { isoCode: "US" },
-    update: {},
+    update: {
+      name: "United States",
+      currencyCode: "USD",
+      flagEmoji: "🇺🇸",
+      isActive: true,
+    },
     create: {
       id: createId(),
       name: "United States",
@@ -146,7 +452,12 @@ async function main() {
 
   const caCountry = await prisma.country.upsert({
     where: { isoCode: "CA" },
-    update: {},
+    update: {
+      name: "Canada",
+      currencyCode: "CAD",
+      flagEmoji: "🇨🇦",
+      isActive: true,
+    },
     create: {
       id: createId(),
       name: "Canada",
@@ -159,7 +470,12 @@ async function main() {
 
   const nlCountry = await prisma.country.upsert({
     where: { isoCode: "NL" },
-    update: {},
+    update: {
+      name: "Netherlands",
+      currencyCode: "EUR",
+      flagEmoji: "🇳🇱",
+      isActive: true,
+    },
     create: {
       id: createId(),
       name: "Netherlands",
@@ -172,7 +488,12 @@ async function main() {
 
   const fiCountry = await prisma.country.upsert({
     where: { isoCode: "FI" },
-    update: {},
+    update: {
+      name: "Finland",
+      currencyCode: "EUR",
+      flagEmoji: "🇫🇮",
+      isActive: true,
+    },
     create: {
       id: createId(),
       name: "Finland",
@@ -185,7 +506,12 @@ async function main() {
 
   const auCountry = await prisma.country.upsert({
     where: { isoCode: "AU" },
-    update: {},
+    update: {
+      name: "Australia",
+      currencyCode: "AUD",
+      flagEmoji: "🇦🇺",
+      isActive: true,
+    },
     create: {
       id: createId(),
       name: "Australia",
@@ -198,7 +524,12 @@ async function main() {
 
   const frCountry = await prisma.country.upsert({
     where: { isoCode: "FR" },
-    update: {},
+    update: {
+      name: "France",
+      currencyCode: "EUR",
+      flagEmoji: "🇫🇷",
+      isActive: true,
+    },
     create: {
       id: createId(),
       name: "France",
@@ -211,7 +542,12 @@ async function main() {
 
   const seCountry = await prisma.country.upsert({
     where: { isoCode: "SE" },
-    update: {},
+    update: {
+      name: "Sweden",
+      currencyCode: "SEK",
+      flagEmoji: "🇸🇪",
+      isActive: true,
+    },
     create: {
       id: createId(),
       name: "Sweden",
@@ -224,7 +560,12 @@ async function main() {
 
   const mtCountry = await prisma.country.upsert({
     where: { isoCode: "MT" },
-    update: {},
+    update: {
+      name: "Malta",
+      currencyCode: "EUR",
+      flagEmoji: "🇲🇹",
+      isActive: true,
+    },
     create: {
       id: createId(),
       name: "Malta",
@@ -237,7 +578,12 @@ async function main() {
 
   const esCountry = await prisma.country.upsert({
     where: { isoCode: "ES" },
-    update: {},
+    update: {
+      name: "Spain",
+      currencyCode: "EUR",
+      flagEmoji: "🇪🇸",
+      isActive: true,
+    },
     create: {
       id: createId(),
       name: "Spain",
@@ -279,50 +625,6 @@ async function main() {
   };
 
   // ─────────────────────────────────────────
-  // FX RATES
-  // ─────────────────────────────────────────
-
-  console.log("Seeding FX rates...");
-
-  await prisma.fxRate.upsert({
-    where: { currencyCode: "GBP" },
-    update: {},
-    create: { currencyCode: "GBP", cbnRate: 1980, parallelRate: 2050 },
-  });
-
-  await prisma.fxRate.upsert({
-    where: { currencyCode: "USD" },
-    update: {},
-    create: { currencyCode: "USD", cbnRate: 1580, parallelRate: 1650 },
-  });
-
-  await prisma.fxRate.upsert({
-    where: { currencyCode: "CAD" },
-    update: {},
-    create: { currencyCode: "CAD", cbnRate: 1160, parallelRate: 1220 },
-  });
-
-  await prisma.fxRate.upsert({
-    where: { currencyCode: "EUR" },
-    update: {},
-    create: { currencyCode: "EUR", cbnRate: 1720, parallelRate: 1790 },
-  });
-
-  await prisma.fxRate.upsert({
-    where: { currencyCode: "AUD" },
-    update: {},
-    create: { currencyCode: "AUD", cbnRate: 1020, parallelRate: 1075 },
-  });
-
-  await prisma.fxRate.upsert({
-    where: { currencyCode: "SEK" },
-    update: {},
-    create: { currencyCode: "SEK", cbnRate: 152, parallelRate: 160 },
-  });
-
-  console.log("✅ FX rates seeded");
-
-  // ─────────────────────────────────────────
   // STUDY INTAKES
   // ─────────────────────────────────────────
 
@@ -333,7 +635,7 @@ async function main() {
     where: {
       countryId_intakeMonth: { countryId: getCountry("GB").id, intakeMonth: 1 },
     },
-    update: {},
+    update: { intakeName: "January Intake", isMainIntake: false },
     create: {
       id: createId(),
       countryId: getCountry("GB").id,
@@ -346,7 +648,7 @@ async function main() {
     where: {
       countryId_intakeMonth: { countryId: getCountry("GB").id, intakeMonth: 5 },
     },
-    update: {},
+    update: { intakeName: "May Intake", isMainIntake: false },
     create: {
       id: createId(),
       countryId: getCountry("GB").id,
@@ -359,7 +661,7 @@ async function main() {
     where: {
       countryId_intakeMonth: { countryId: getCountry("GB").id, intakeMonth: 9 },
     },
-    update: {},
+    update: { intakeName: "September Intake", isMainIntake: true },
     create: {
       id: createId(),
       countryId: getCountry("GB").id,
@@ -375,7 +677,7 @@ async function main() {
         intakeMonth: 10,
       },
     },
-    update: {},
+    update: { intakeName: "October Intake", isMainIntake: false },
     create: {
       id: createId(),
       countryId: getCountry("GB").id,
@@ -390,7 +692,7 @@ async function main() {
     where: {
       countryId_intakeMonth: { countryId: getCountry("US").id, intakeMonth: 1 },
     },
-    update: {},
+    update: { intakeName: "Spring Semester", isMainIntake: false },
     create: {
       id: createId(),
       countryId: getCountry("US").id,
@@ -403,7 +705,7 @@ async function main() {
     where: {
       countryId_intakeMonth: { countryId: getCountry("US").id, intakeMonth: 8 },
     },
-    update: {},
+    update: { intakeName: "Fall Semester", isMainIntake: true },
     create: {
       id: createId(),
       countryId: getCountry("US").id,
@@ -418,7 +720,7 @@ async function main() {
     where: {
       countryId_intakeMonth: { countryId: getCountry("CA").id, intakeMonth: 1 },
     },
-    update: {},
+    update: { intakeName: "Winter Intake", isMainIntake: false },
     create: {
       id: createId(),
       countryId: getCountry("CA").id,
@@ -431,7 +733,7 @@ async function main() {
     where: {
       countryId_intakeMonth: { countryId: getCountry("CA").id, intakeMonth: 5 },
     },
-    update: {},
+    update: { intakeName: "Summer Intake", isMainIntake: false },
     create: {
       id: createId(),
       countryId: getCountry("CA").id,
@@ -444,7 +746,7 @@ async function main() {
     where: {
       countryId_intakeMonth: { countryId: getCountry("CA").id, intakeMonth: 9 },
     },
-    update: {},
+    update: { intakeName: "Fall Intake", isMainIntake: true },
     create: {
       id: createId(),
       countryId: getCountry("CA").id,
@@ -459,7 +761,7 @@ async function main() {
     where: {
       countryId_intakeMonth: { countryId: getCountry("AU").id, intakeMonth: 2 },
     },
-    update: {},
+    update: { intakeName: "Semester 1", isMainIntake: true },
     create: {
       id: createId(),
       countryId: getCountry("AU").id,
@@ -472,7 +774,7 @@ async function main() {
     where: {
       countryId_intakeMonth: { countryId: getCountry("AU").id, intakeMonth: 7 },
     },
-    update: {},
+    update: { intakeName: "Semester 2", isMainIntake: false },
     create: {
       id: createId(),
       countryId: getCountry("AU").id,
@@ -487,7 +789,7 @@ async function main() {
     where: {
       countryId_intakeMonth: { countryId: getCountry("NL").id, intakeMonth: 9 },
     },
-    update: {},
+    update: { intakeName: "September Intake", isMainIntake: true },
     create: {
       id: createId(),
       countryId: getCountry("NL").id,
@@ -502,7 +804,7 @@ async function main() {
     where: {
       countryId_intakeMonth: { countryId: getCountry("FI").id, intakeMonth: 9 },
     },
-    update: {},
+    update: { intakeName: "Autumn Semester", isMainIntake: true },
     create: {
       id: createId(),
       countryId: getCountry("FI").id,
@@ -517,7 +819,7 @@ async function main() {
     where: {
       countryId_intakeMonth: { countryId: getCountry("FR").id, intakeMonth: 9 },
     },
-    update: {},
+    update: { intakeName: "Autumn Intake", isMainIntake: true },
     create: {
       id: createId(),
       countryId: getCountry("FR").id,
@@ -530,7 +832,7 @@ async function main() {
     where: {
       countryId_intakeMonth: { countryId: getCountry("FR").id, intakeMonth: 1 },
     },
-    update: {},
+    update: { intakeName: "Spring Intake", isMainIntake: false },
     create: {
       id: createId(),
       countryId: getCountry("FR").id,
@@ -545,7 +847,7 @@ async function main() {
     where: {
       countryId_intakeMonth: { countryId: getCountry("SE").id, intakeMonth: 9 },
     },
-    update: {},
+    update: { intakeName: "Autumn Semester", isMainIntake: true },
     create: {
       id: createId(),
       countryId: getCountry("SE").id,
@@ -563,7 +865,7 @@ async function main() {
         intakeMonth: 10,
       },
     },
-    update: {},
+    update: { intakeName: "October Intake", isMainIntake: true },
     create: {
       id: createId(),
       countryId: getCountry("MT").id,
@@ -578,7 +880,7 @@ async function main() {
     where: {
       countryId_intakeMonth: { countryId: getCountry("ES").id, intakeMonth: 9 },
     },
-    update: {},
+    update: { intakeName: "Autumn Intake", isMainIntake: true },
     create: {
       id: createId(),
       countryId: getCountry("ES").id,
@@ -591,7 +893,7 @@ async function main() {
     where: {
       countryId_intakeMonth: { countryId: getCountry("ES").id, intakeMonth: 1 },
     },
-    update: {},
+    update: { intakeName: "Spring Intake", isMainIntake: false },
     create: {
       id: createId(),
       countryId: getCountry("ES").id,
@@ -610,14 +912,14 @@ async function main() {
   console.log("Seeding POF rules...");
 
   // ── UK STUDY ──
-  await prisma.pofRule.upsert({
+  await upsertPofRule({
+    metadata: RULE_METADATA.GB_STUDY,
     where: {
       countryId_purposeId: {
         countryId: getCountry("GB").id,
         purposeId: getPurpose("study").id,
       },
     },
-    update: {},
     create: {
       id: createId(),
       countryId: getCountry("GB").id,
@@ -625,25 +927,25 @@ async function main() {
       safeBufferMonths: 3,
       cautionBufferMonths: 2,
       riskyBufferMonths: 1,
-      minAmountForeign: 12006,
+      minAmountForeign: 0,
       requiresHistory: true,
-      statementMonths: 28,
+      statementMonths: null,
       analysisText:
-        "UKVI requires your {{minAmountForeign}} {{currencyCode}} to be held in your account for a minimum of 28 consecutive days before your application date. Your safe start date is {{safeDate}}. Based on today's parallel rate of ₦{{parallelRate}}/{{currencyCode}}, your recommended Naira target is {{nairaTarget}}. To reach this safely, deposit {{monthlyDeposit}} per month.",
+        "This route cannot use one fixed amount: UK student funds vary by study location, course length and unpaid tuition. The calculator is disabled until those inputs are collected. UKVI also requires eligible funds to be held for 28 consecutive days.",
       nigerianSpecific:
-        "Nigerian applicants must account for Form A/PTA processing delays which can take 4–8 weeks. Do not rely on CBN official rates — source your FX via domiciliary account deposits at the parallel rate. Avoid any single deposit exceeding 30% of your existing balance as this triggers UKVI financial manipulation checks.",
+        "Plan currency conversion and bank-document lead time early, and retain evidence showing where the funds came from. Confirm the latest requirements on the linked GOV.UK source before applying.",
     },
   });
 
   // ── UK VISIT ──
-  await prisma.pofRule.upsert({
+  await upsertPofRule({
+    metadata: RULE_METADATA.GB_VISIT,
     where: {
       countryId_purposeId: {
         countryId: getCountry("GB").id,
         purposeId: getPurpose("visit").id,
       },
     },
-    update: {},
     create: {
       id: createId(),
       countryId: getCountry("GB").id,
@@ -651,25 +953,25 @@ async function main() {
       safeBufferMonths: 3,
       cautionBufferMonths: 2,
       riskyBufferMonths: 1,
-      minAmountForeign: 3000,
+      minAmountForeign: 0,
       requiresHistory: false,
-      statementMonths: 6,
+      statementMonths: null,
       analysisText:
-        "UK Standard Visitor Visa requires proof of {{minAmountForeign}} {{currencyCode}} or equivalent to cover your stay. Your safe preparation window opens {{safeDate}}. At the current parallel rate, your Naira target is {{nairaTarget}}.",
+        "The UK Standard Visitor route has no official fixed minimum. The required amount depends on the trip, accommodation, dependants and the applicant's circumstances, so this calculator rule is disabled.",
       nigerianSpecific:
-        "UK visit visa refusal rates for Nigerian applicants remain high. A clean 6-month statement showing regular income is more powerful than a large balance. Ensure your statement reflects your genuine financial life.",
+        "Provide consistent evidence that the trip is affordable and explain the source of material credits. Use the linked Immigration Rules as the authority.",
     },
   });
 
   // ── USA STUDY ──
-  await prisma.pofRule.upsert({
+  await upsertPofRule({
+    metadata: RULE_METADATA.US_STUDY,
     where: {
       countryId_purposeId: {
         countryId: getCountry("US").id,
         purposeId: getPurpose("study").id,
       },
     },
-    update: {},
     create: {
       id: createId(),
       countryId: getCountry("US").id,
@@ -677,25 +979,25 @@ async function main() {
       safeBufferMonths: 6,
       cautionBufferMonths: 4,
       riskyBufferMonths: 2,
-      minAmountForeign: 35000,
-      requiresHistory: true,
-      statementMonths: 3,
+      minAmountForeign: 0,
+      requiresHistory: false,
+      statementMonths: null,
       analysisText:
-        "US F-1 Student Visa requires POF before your university issues the I-20 document — without the I-20 you cannot book your visa interview. You need {{minAmountForeign}} {{currencyCode}} demonstrable. Safe preparation begins {{safeDate}}. Your Naira target at parallel rate is {{nairaTarget}}. Monthly deposit target: {{monthlyDeposit}}.",
+        "US student funding is institution-specific and comes from the educational, living and travel estimates on the applicant's Form I-20. This fixed-amount rule is disabled until an I-20 amount can be entered.",
       nigerianSpecific:
-        "US consulate in Lagos and Abuja have some of the highest F-1 refusal rates globally for Nigerian applicants. Your DS-160, I-20, and financial documents must all be airtight. Avoid lump sum deposits — the embassy looks for 3 months of consistent account history showing the funds are genuinely yours.",
+        "Use the amount shown by the school and retain clear evidence of the availability and source of funds. There is no universal three-month holding rule.",
     },
   });
 
   // ── CANADA STUDY ──
-  await prisma.pofRule.upsert({
+  await upsertPofRule({
+    metadata: RULE_METADATA.CA_STUDY,
     where: {
       countryId_purposeId: {
         countryId: getCountry("CA").id,
         purposeId: getPurpose("study").id,
       },
     },
-    update: {},
     create: {
       id: createId(),
       countryId: getCountry("CA").id,
@@ -703,25 +1005,25 @@ async function main() {
       safeBufferMonths: 6,
       cautionBufferMonths: 4,
       riskyBufferMonths: 2,
-      minAmountForeign: 20635,
+      minAmountForeign: 22895,
       requiresHistory: true,
       statementMonths: 4,
       analysisText:
-        "Canada IRCC requires {{minAmountForeign}} {{currencyCode}} for the first year of study plus tuition. Your safe window to begin opens {{safeDate}}. At today's parallel rate of ₦{{parallelRate}}/{{currencyCode}}, your Naira target is {{nairaTarget}}. Build toward {{monthlyDeposit}} per month to avoid lump sum flags.",
+        "The {{minAmountForeign}} {{currencyCode}} figure is the current one-person living-cost floor outside Quebec. It excludes tuition and transportation, and family size can increase it. The Naira estimate for this component is {{nairaTarget}}.",
       nigerianSpecific:
-        "IRCC specifically monitors Nigerian applications for sudden unexplained deposits — a tactic known as account dumping. You need a minimum 4–6 months of organic account history. Never deposit more than 40% of your existing balance in a single transaction. The Student Direct Stream (SDS) route requires a GIC of CAD $10,000 from a designated bank.",
+        "IRCC lists recent bank statements among accepted evidence. Keep clear records for the source of funds and add tuition, transport and any dependant amount before treating this as an application budget.",
     },
   });
 
   // ── AUSTRALIA STUDY ──
-  await prisma.pofRule.upsert({
+  await upsertPofRule({
+    metadata: RULE_METADATA.AU_STUDY,
     where: {
       countryId_purposeId: {
         countryId: getCountry("AU").id,
         purposeId: getPurpose("study").id,
       },
     },
-    update: {},
     create: {
       id: createId(),
       countryId: getCountry("AU").id,
@@ -730,24 +1032,24 @@ async function main() {
       cautionBufferMonths: 3,
       riskyBufferMonths: 1,
       minAmountForeign: 29710,
-      requiresHistory: true,
-      statementMonths: 3,
+      requiresHistory: false,
+      statementMonths: null,
       analysisText:
-        "Australia Student Visa (Subclass 500) requires AUD {{minAmountForeign}} for living costs for one year plus tuition. Safe preparation begins {{safeDate}}. Your Naira target is {{nairaTarget}}. Monthly deposit target: {{monthlyDeposit}}.",
+        "The {{minAmountForeign}} {{currencyCode}} figure is the one-student annual living-cost component. A complete capacity assessment also includes travel, course fees and any family or school costs. The Naira estimate for this component is {{nairaTarget}}.",
       nigerianSpecific:
-        "Australian DHA case officers are trained to detect account dumping. Genuine savings history is critical. Your GTE (Genuine Temporary Entrant) statement must convincingly explain why you will return to Nigeria after your studies.",
+        "Use evidence that the funds are genuinely available and explain their source where requested. Check the current Genuine Student requirement and document checklist before applying.",
     },
   });
 
   // ── NETHERLANDS STUDY ──
-  await prisma.pofRule.upsert({
+  await upsertPofRule({
+    metadata: RULE_METADATA.NL_STUDY,
     where: {
       countryId_purposeId: {
         countryId: getCountry("NL").id,
         purposeId: getPurpose("study").id,
       },
     },
-    update: {},
     create: {
       id: createId(),
       countryId: getCountry("NL").id,
@@ -755,25 +1057,25 @@ async function main() {
       safeBufferMonths: 4,
       cautionBufferMonths: 2,
       riskyBufferMonths: 1,
-      minAmountForeign: 13200,
+      minAmountForeign: 13569.24,
       requiresHistory: false,
-      statementMonths: 3,
+      statementMonths: null,
       analysisText:
-        "Netherlands IND requires {{minAmountForeign}} {{currencyCode}} (€1,100/month × 12) demonstrable for student residence permit. Safe window opens {{safeDate}}. Naira target: {{nairaTarget}}. Monthly deposit: {{monthlyDeposit}}.",
+        "The 2026 IND university/HBO living-cost norm is {{minAmountForeign}} {{currencyCode}} for 12 months. Tuition is separate. The Naira estimate for this living-cost component is {{nairaTarget}}.",
       nigerianSpecific:
-        "IND checks that funds are in your personal account — not a family member's. Ensure your domiciliary account is in your name and reflects consistent deposits over the statement period.",
+        "IND permits several funding routes with different evidence, including the applicant, an institution, a scholarship, a company or a private financier. Match the documents to the route used.",
     },
   });
 
   // ── FINLAND STUDY ──
-  await prisma.pofRule.upsert({
+  await upsertPofRule({
+    metadata: RULE_METADATA.FI_STUDY,
     where: {
       countryId_purposeId: {
         countryId: getCountry("FI").id,
         purposeId: getPurpose("study").id,
       },
     },
-    update: {},
     create: {
       id: createId(),
       countryId: getCountry("FI").id,
@@ -781,25 +1083,25 @@ async function main() {
       safeBufferMonths: 4,
       cautionBufferMonths: 2,
       riskyBufferMonths: 1,
-      minAmountForeign: 6720,
-      requiresHistory: false,
-      statementMonths: 3,
+      minAmountForeign: 9600,
+      requiresHistory: true,
+      statementMonths: 6,
       analysisText:
-        "Finland Migri requires {{minAmountForeign}} {{currencyCode}} (€560/month × 12) for student residence permit. Safe window opens {{safeDate}}. Naira target: {{nairaTarget}}.",
+        "Migri's one-year living-funds component is {{minAmountForeign}} {{currencyCode}}. Unpaid tuition must be available separately. The Naira estimate for the living-cost component is {{nairaTarget}}.",
       nigerianSpecific:
-        "Finnish universities have one main September intake. Apply through the Enter Finland portal well in advance. Processing takes 1–3 months so begin your POF preparation at least 4 months before the intake.",
+        "The funds must be in the applicant's account when applying, and Migri requests a bank statement covering the previous six months. Treat the product timeline as planning guidance, not an official holding period.",
     },
   });
 
   // ── FRANCE STUDY ──
-  await prisma.pofRule.upsert({
+  await upsertPofRule({
+    metadata: RULE_METADATA.FR_STUDY,
     where: {
       countryId_purposeId: {
         countryId: getCountry("FR").id,
         purposeId: getPurpose("study").id,
       },
     },
-    update: {},
     create: {
       id: createId(),
       countryId: getCountry("FR").id,
@@ -807,25 +1109,25 @@ async function main() {
       safeBufferMonths: 4,
       cautionBufferMonths: 2,
       riskyBufferMonths: 1,
-      minAmountForeign: 7380,
+      minAmountForeign: 10530,
       requiresHistory: false,
-      statementMonths: 3,
+      statementMonths: null,
       analysisText:
-        "France long-stay student visa requires {{minAmountForeign}} {{currencyCode}} (€615/month × 12). Safe window opens {{safeDate}}. Naira target: {{nairaTarget}}. Monthly deposit: {{monthlyDeposit}}.",
+        "France's student living-funds requirement changes on 1 August 2026. This fixed rule remains disabled until the calculator asks for the application date. The future 12-month component is {{minAmountForeign}} {{currencyCode}}.",
       nigerianSpecific:
-        "Campus France registration is mandatory for Nigerian students before the consulate appointment. Complete this process early as it adds 4–6 weeks to your timeline. Statement must be translated to French or English by a certified translator.",
+        "Follow the current France-Visas and Campus France checklists for the applicant's location and planned application date.",
     },
   });
 
   // ── SWEDEN STUDY ──
-  await prisma.pofRule.upsert({
+  await upsertPofRule({
+    metadata: RULE_METADATA.SE_STUDY,
     where: {
       countryId_purposeId: {
         countryId: getCountry("SE").id,
         purposeId: getPurpose("study").id,
       },
     },
-    update: {},
     create: {
       id: createId(),
       countryId: getCountry("SE").id,
@@ -833,25 +1135,25 @@ async function main() {
       safeBufferMonths: 4,
       cautionBufferMonths: 2,
       riskyBufferMonths: 1,
-      minAmountForeign: 102816,
+      minAmountForeign: 127872,
       requiresHistory: false,
-      statementMonths: 3,
+      statementMonths: null,
       analysisText:
-        "Sweden Migrationsverket requires SEK {{minAmountForeign}} (SEK 8,568/month × 12) for student permit. Safe window opens {{safeDate}}. Naira target: {{nairaTarget}}.",
+        "The 2026 12-month maintenance component is {{minAmountForeign}} {{currencyCode}} for one student. Study duration, free food or housing, and accompanying family can change the total. Its Naira estimate is {{nairaTarget}}.",
       nigerianSpecific:
-        "Apply via the Migrationsverket online portal. Processing takes 2–4 months. Account statement must be in English or Swedish — get a certified translation from your Nigerian bank.",
+        "Use a qualifying personal bank statement issued within the official timing window and add any dependant amount before relying on the estimate.",
     },
   });
 
   // ── MALTA STUDY ──
-  await prisma.pofRule.upsert({
+  await upsertPofRule({
+    metadata: RULE_METADATA.MT_STUDY,
     where: {
       countryId_purposeId: {
         countryId: getCountry("MT").id,
         purposeId: getPurpose("study").id,
       },
     },
-    update: {},
     create: {
       id: createId(),
       countryId: getCountry("MT").id,
@@ -859,25 +1161,25 @@ async function main() {
       safeBufferMonths: 3,
       cautionBufferMonths: 2,
       riskyBufferMonths: 1,
-      minAmountForeign: 7800,
-      requiresHistory: false,
+      minAmountForeign: 0,
+      requiresHistory: true,
       statementMonths: 3,
       analysisText:
-        "Malta requires {{minAmountForeign}} {{currencyCode}} (€650/month × 12) for student residence permit. Safe window opens {{safeDate}}. Naira target: {{nairaTarget}}.",
+        "Malta uses different funding tests for study residence permits and Student National D visas, and the residence amount can depend on household circumstances. This fixed rule is disabled until the route and household inputs are modeled.",
       nigerianSpecific:
-        "Identity Malta Agency handles permit applications. English is the medium of instruction at most Maltese institutions making integration easier for Nigerian students. Apply online through the Identity Malta portal.",
+        "Use the Identità checklist for the exact route and keep the requested recent statement or transfer evidence.",
     },
   });
 
   // ── SPAIN STUDY ──
-  await prisma.pofRule.upsert({
+  await upsertPofRule({
+    metadata: RULE_METADATA.ES_STUDY,
     where: {
       countryId_purposeId: {
         countryId: getCountry("ES").id,
         purposeId: getPurpose("study").id,
       },
     },
-    update: {},
     create: {
       id: createId(),
       countryId: getCountry("ES").id,
@@ -887,11 +1189,11 @@ async function main() {
       riskyBufferMonths: 1,
       minAmountForeign: 7200,
       requiresHistory: false,
-      statementMonths: 3,
+      statementMonths: null,
       analysisText:
-        "Spain student visa requires {{minAmountForeign}} {{currencyCode}} (€600/month × 12). Safe window opens {{safeDate}}. Naira target: {{nairaTarget}}. Monthly deposit: {{monthlyDeposit}}.",
+        "Spain's funding test is duration-based and changes with family and prepaid accommodation. The {{minAmountForeign}} {{currencyCode}} figure represents one applicant for exactly 12 months, so the rule is disabled until duration is an input.",
       nigerianSpecific:
-        "Spanish consulate in Abuja processes Nigerian student applications. All Nigerian documents must be apostilled. Health insurance covering €30,000 minimum is mandatory. Note that August is essentially a dead month for Spanish administration — plan your application timeline around this.",
+        "Use the responsible Spanish consulate's current checklist for document form, translations and evidence period.",
     },
   });
 
@@ -899,11 +1201,25 @@ async function main() {
   console.log("🎉 Smarrrt database seeding complete!");
 }
 
-main()
-  .catch((e: unknown) => {
-    console.error("❌ Seeding failed:", e);
-    process.exit(1);
-  })
-  .finally(async () => {
+async function closeConnections() {
+  try {
     await prisma.$disconnect();
-  });
+  } catch (error) {
+    console.error("❌ Failed to disconnect Prisma:", error);
+    process.exitCode = 1;
+  }
+
+  try {
+    await pool.end();
+  } catch (error) {
+    console.error("❌ Failed to close the PostgreSQL pool:", error);
+    process.exitCode = 1;
+  }
+}
+
+void main()
+  .catch((error: unknown) => {
+    console.error("❌ Seeding failed:", error);
+    process.exitCode = 1;
+  })
+  .finally(closeConnections);

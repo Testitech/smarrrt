@@ -24,6 +24,8 @@ export type FxRate = {
   currencyCode: string;
   cbnRate: number;
   parallelRate: number;
+  source: string;
+  isIndicative: boolean;
   lastUpdated: Date;
 };
 
@@ -42,7 +44,19 @@ export type PofRule = {
   requiresHistory: boolean;
   analysisText: string;
   nigerianSpecific: string;
-  statementMonths: number;
+  statementMonths: number | null;
+  documentMaxAgeDays: number | null;
+  holdingPeriodDays: number | null;
+  amountScope:
+    | "TOTAL_ESTIMATE"
+    | "LIVING_COSTS_ONLY"
+    | "VARIABLE_REQUIREMENT";
+  isActive: boolean;
+  ruleVersion: string;
+  sourceUrl: string | null;
+  sourceCheckedAt: Date | null;
+  effectiveFrom: Date | null;
+  effectiveTo: Date | null;
 };
 
 export type StudyIntake = {
@@ -62,6 +76,7 @@ export type PofStatus = "safe" | "caution" | "risky";
 export type MonthStatus = {
   month: number; // 0-indexed (0 = Jan, 11 = Dec)
   monthName: string;
+  year: number;
   status: PofStatus;
   note: string;
   isIntakeMonth: boolean;
@@ -93,6 +108,7 @@ export type UserTimeline = {
   purposeId: string;
   slug: string;
   intakeDate: Date;
+  intakeKey: string;
   currentBalance: number;
   targetAmount: number;
   monthlyDeposit: number;
@@ -100,6 +116,9 @@ export type UserTimeline = {
   cautionStartDate: Date;
   riskyStartDate: Date;
   currentStatus: PofStatus;
+  calculatedAt: Date;
+  ruleVersion: string | null;
+  fxRateUsed: number | null;
   createdAt: Date;
   updatedAt: Date;
   country?: Country;
@@ -116,20 +135,29 @@ export type ApiResponse<T> = {
   error?: string;
 };
 
-export type PofApiResponse = ApiResponse<{
+export type Serialized<T> = T extends Date
+  ? string
+  : T extends Array<infer Item>
+    ? Array<Serialized<Item>>
+    : T extends object
+      ? { [Key in keyof T]: Serialized<T[Key]> }
+      : T;
+
+export type FxRateDto = Serialized<FxRate>;
+
+export type PofApiResponse = ApiResponse<Serialized<{
   rule: PofRule;
   calculation: PofCalculationResult;
   fxRate: FxRate;
-  studyIntakes?: StudyIntake[];
-}>;
+}>>;
 
 // ─────────────────────────────────────────
 // FORM / UI TYPES
 // ─────────────────────────────────────────
 
 export type CalculatorFormValues = {
-  countryId: string;
-  purposeId: string;
+  countryCode: string;
+  purposeSlug: string;
   intakeDate: Date;
   currentBalance: number;
 };

@@ -14,8 +14,6 @@ import { AlertTriangle, CheckCircle, TrendingUp, Info } from "lucide-react";
 type StatementAnalyzerProps = {
   recommendedNairaTarget: number;
   currentBalanceNaira: number;
-  safeMonthlyDeposit: number;
-  lumpSumRisk: boolean;
   monthsAvailable: number;
   currencyCode: string;
   minAmountForeign: number;
@@ -62,7 +60,7 @@ function MonthRow({
   target: number;
   index: number;
 }) {
-  const progress = Math.min((runningBalance / target) * 100, 100);
+  const progress = target > 0 ? Math.min((runningBalance / target) * 100, 100) : 100;
   const isComplete = runningBalance >= target;
 
   return (
@@ -81,7 +79,7 @@ function MonthRow({
 
       {/* Deposit */}
       <div className="shrink-0 w-32">
-        <p className="text-xs text-muted-foreground">Deposit</p>
+        <p className="text-xs text-muted-foreground">Contribution</p>
         <p className="text-sm font-mono font-semibold text-foreground">
           {formatNaira(deposit)}
         </p>
@@ -137,12 +135,15 @@ const MONTH_NAMES = [
 export default function StatementAnalyzer({
   recommendedNairaTarget,
   currentBalanceNaira,
-  safeMonthlyDeposit,
-  lumpSumRisk,
   monthsAvailable,
   currencyCode,
   minAmountForeign,
 }: StatementAnalyzerProps) {
+  const balanceSliderMax = Math.max(
+    100_000,
+    recommendedNairaTarget,
+    currentBalanceNaira,
+  );
   // User can adjust their current balance interactively
   const [adjustedBalance, setAdjustedBalance] = useState(currentBalanceNaira);
   const [adjustedMonths, setAdjustedMonths] = useState(
@@ -165,7 +166,7 @@ export default function StatementAnalyzer({
         recommendedNairaTarget,
       );
       return {
-        month: MONTH_NAMES[monthDate.getMonth()],
+        month: `${MONTH_NAMES[monthDate.getMonth()]} ${String(monthDate.getFullYear()).slice(-2)}`,
         deposit: monthlyDeposit,
         runningBalance,
       };
@@ -179,11 +180,12 @@ export default function StatementAnalyzer({
       {/* Header */}
       <div>
         <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
-          Statement Health Analyzer
+          Savings Plan Analyzer
         </h2>
         <p className="text-sm md:text-base text-muted-foreground mt-2 leading-relaxed max-w-2xl">
-          Adjust your current balance and timeline to find your safe monthly
-          deposit — without triggering embassy lump-sum flags.
+          Adjust your balance and timeline to explore a monthly contribution
+          plan. The concentration indicator is a product heuristic, not an
+          embassy rule or statement review.
         </p>
       </div>
 
@@ -197,7 +199,7 @@ export default function StatementAnalyzer({
             <div className="flex items-start justify-between mb-5">
               <div>
                 <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground font-semibold">
-                  POF Target
+                  Planning Target
                 </p>
 
                 <h3 className="text-3xl font-bold tracking-tight mt-2 naira-amount">
@@ -213,7 +215,7 @@ export default function StatementAnalyzer({
             <div className="space-y-2">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">
-                  Required foreign amount
+                  Rule amount
                 </span>
 
                 <span className="font-semibold text-foreground">
@@ -223,7 +225,7 @@ export default function StatementAnalyzer({
 
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">
-                  Safety buffer included
+                  Planning buffer included
                 </span>
 
                 <span className="font-semibold text-green-600">+5%</span>
@@ -240,7 +242,7 @@ export default function StatementAnalyzer({
             <div className="flex items-start justify-between mb-5">
               <div>
                 <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground font-semibold">
-                  Safe Monthly Deposit
+                  Suggested Monthly Contribution
                 </p>
 
                 <h3 className="text-3xl font-bold tracking-tight mt-2 text-primary naira-amount">
@@ -291,7 +293,7 @@ export default function StatementAnalyzer({
             <div className="flex items-start justify-between mb-5">
               <div>
                 <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground font-semibold">
-                  Lump Sum Risk
+                  Deposit Concentration
                 </p>
 
                 <h3
@@ -349,10 +351,10 @@ export default function StatementAnalyzer({
 
               <p className="text-sm leading-relaxed text-muted-foreground">
                 {analysis.riskLevel === "safe"
-                  ? "Your deposits appear organic and embassy-friendly."
+                  ? "The monthly contribution is at most 30% of the starting balance under this heuristic."
                   : analysis.riskLevel === "caution"
-                    ? "Your growth pattern is borderline. Extending the timeline helps."
-                    : "Your deposits may resemble account dumping patterns."}
+                    ? "The monthly contribution is 30–60% of the starting balance under this heuristic."
+                    : "The plan depends on monthly additions above 60% of the starting balance."}
               </p>
             </div>
           </CardContent>
@@ -364,10 +366,11 @@ export default function StatementAnalyzer({
         <Alert className="border-red-200/70 bg-red-50/80 dark:bg-red-950/20 rounded-2xl px-5 py-4 shadow-sm">
           <AlertTriangle className="w-4 h-4 text-red-600" />
           <AlertDescription className="text-red-700 dark:text-red-400 leading-7 text-sm">
-            <strong>High lump sum risk detected.</strong> Your required monthly
-            deposit is more than 60% of your current balance — this will look
-            like account dumping to embassy case officers. Either increase your
-            starting balance or extend your timeline using the sliders below.
+            <strong>High contribution concentration.</strong> The suggested
+            monthly amount is more than 60% of the starting balance. This is a
+            planning flag only; it does not predict an application decision.
+            Consider a longer timeline and keep evidence for the source of all
+            funds.
           </AlertDescription>
         </Alert>
       )}
@@ -376,9 +379,10 @@ export default function StatementAnalyzer({
         <Alert className="border-yellow-200 bg-yellow-50 dark:bg-yellow-950/20">
           <AlertTriangle className="w-4 h-4 text-yellow-600" />
           <AlertDescription className="text-yellow-700 dark:text-yellow-400 leading-7 text-sm">
-            <strong>Moderate risk.</strong> Your deposit ratio is between 30%
-            and 60% of your balance. This is borderline — consider adding 1–2
-            more months to your timeline to make the growth look more organic.
+            <strong>Moderate contribution concentration.</strong> The suggested
+            monthly amount is between 30% and 60% of the starting balance under
+            this product heuristic. A longer timeline reduces the monthly
+            amount, but official evidence rules still need separate review.
           </AlertDescription>
         </Alert>
       )}
@@ -387,9 +391,10 @@ export default function StatementAnalyzer({
         <Alert className="border-green-200 bg-green-50 dark:bg-green-950/20">
           <CheckCircle className="w-4 h-4 text-green-600" />
           <AlertDescription className="text-green-700 dark:text-green-400 leading-7 text-sm">
-            <strong>Looking good.</strong> Your monthly deposit is within a safe
-            range relative to your current balance. Stick to this plan and your
-            account history will look credible to the embassy.
+            <strong>Lower contribution concentration.</strong> The suggested
+            monthly amount is at most 30% of the starting balance under this
+            planning heuristic. This does not establish that the funds or
+            statement will satisfy an authority.
           </AlertDescription>
         </Alert>
       )}
@@ -408,11 +413,11 @@ export default function StatementAnalyzer({
             <div className="flex items-center justify-between gap-3">
               <div>
                 <label className="text-sm font-semibold text-foreground">
-                  Current Balance
+                  Starting Balance
                 </label>
 
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Your current available account balance
+                  Balance used for this illustrative plan
                 </p>
               </div>
 
@@ -424,7 +429,7 @@ export default function StatementAnalyzer({
             </div>
             <Slider
               min={0}
-              max={recommendedNairaTarget}
+              max={balanceSliderMax}
               step={100000}
               value={[adjustedBalance]}
               onValueChange={(val) => setAdjustedBalance(val[0])}
@@ -432,21 +437,21 @@ export default function StatementAnalyzer({
             />
             <div className="flex justify-between text-xs text-muted-foreground">
               <span>₦0</span>
-              <span>{formatNaira(recommendedNairaTarget)}</span>
+              <span>{formatNaira(balanceSliderMax)}</span>
             </div>
           </div>
 
           {/* Months slider */}
           <div className="space-y-3 rounded-2xl border border-border/60 bg-muted/20 p-4 md:p-5">
             <div className="flex justify-between items-center">
-              <label className="text-sm font-semibold">Months Available</label>
+              <label className="text-sm font-semibold">Planning Months</label>
               <span className="text-sm font-mono font-bold text-primary">
                 {adjustedMonths} months
               </span>
             </div>
             <Slider
               min={1}
-              max={12}
+              max={Math.max(12, monthsAvailable)}
               step={1}
               value={[adjustedMonths]}
               onValueChange={(val) => setAdjustedMonths(val[0])}
@@ -454,7 +459,7 @@ export default function StatementAnalyzer({
             />
             <div className="flex justify-between text-xs text-muted-foreground">
               <span>1 month</span>
-              <span>12 months</span>
+              <span>{Math.max(12, monthsAvailable)} months</span>
             </div>
           </div>
         </CardContent>
@@ -464,10 +469,10 @@ export default function StatementAnalyzer({
       <div className="flex gap-2 text-xs text-muted-foreground">
         <Info className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
         <p>
-          This analyzer calculates the maximum safe deposit per month based on
-          your current balance and available time. The 30% threshold is derived
-          from common embassy financial manipulation detection patterns. Always
-          consult a visa consultant for your specific case.
+          The 30% and 60% bands are Smarrrt planning heuristics, not published
+          embassy thresholds. This tool does not assess income, transaction
+          history, source-of-funds documents, or case-specific requirements.
+          Confirm current official guidance before acting on the plan.
         </p>
       </div>
 
@@ -481,7 +486,8 @@ export default function StatementAnalyzer({
               </CardTitle>
 
               <p className="text-sm text-muted-foreground mt-1">
-                A realistic savings path that keeps your statement healthy.
+                An illustrative path to the planning target; it is not a bank or
+                embassy-approved schedule.
               </p>
             </div>
 
@@ -524,13 +530,12 @@ export default function StatementAnalyzer({
         </div>
 
         <h3 className="text-lg font-semibold mb-2">
-          Exportable Embassy Prep Plans
+          Exportable Planning Reports
         </h3>
 
         <p className="text-sm text-muted-foreground max-w-md mx-auto leading-relaxed mb-5">
-          Soon you’ll be able to export your full savings timeline, monthly
-          deposit strategy, and statement health analysis as a polished PDF
-          report.
+          Soon you’ll be able to export the savings timeline, monthly
+          contribution plan, and heuristic analysis as a PDF report.
         </p>
 
         <Button variant="outline" disabled>

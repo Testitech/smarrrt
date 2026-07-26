@@ -7,9 +7,10 @@ import {
   Calculator,
   TrendingUp,
   Settings,
+  ShieldCheck,
 } from "lucide-react";
 
-const NAV_ITEMS = [
+const PRIMARY_NAV_ITEMS = [
   {
     label: "Home",
     href: "/dashboard",
@@ -25,51 +26,69 @@ const NAV_ITEMS = [
     href: "/dashboard/fx-rates",
     icon: TrendingUp,
   },
-  {
-    label: "Settings",
-    href: "/dashboard/settings",
-    icon: Settings,
-  },
 ];
 
-export function MobileNav() {
+const SETTINGS_NAV_ITEM = {
+  label: "Account",
+  href: "/dashboard/settings",
+  icon: Settings,
+};
+
+const ADMIN_NAV_ITEM = {
+  label: "Admin",
+  href: "/admin",
+  icon: ShieldCheck,
+};
+
+type MobileNavProps = {
+  isAdmin?: boolean;
+};
+
+export function MobileNav({ isAdmin = false }: MobileNavProps) {
   const pathname = usePathname();
+  const navItems = isAdmin
+    ? [...PRIMARY_NAV_ITEMS, ADMIN_NAV_ITEM, SETTINGS_NAV_ITEM]
+    : [...PRIMARY_NAV_ITEMS, SETTINGS_NAV_ITEM];
+  const activeHref = navItems
+    .filter(
+      ({ href }) => pathname === href || pathname.startsWith(`${href}/`),
+    )
+    .sort((a, b) => b.href.length - a.href.length)[0]?.href;
 
   return (
-    <div className="md:hidden fixed bottom-0 inset-x-0 z-50 border-t border-border/50 bg-background/95 backdrop-blur-xl">
-      <div className="grid grid-cols-4 h-16">
-        {NAV_ITEMS.map((item) => {
-          const isActive =
-            pathname === item.href ||
-            pathname.startsWith(`${item.href}/`);
+    <nav
+      aria-label="Mobile dashboard navigation"
+      className="pb-[env(safe-area-inset-bottom)]"
+    >
+      <ul
+        className={`grid h-16 ${isAdmin ? "grid-cols-5" : "grid-cols-4"}`}
+      >
+        {navItems.map((item) => {
+          const isActive = activeHref === item.href;
 
           return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`
-                flex flex-col items-center justify-center gap-1
-                text-xs font-medium transition-colors
-                
-                ${
+            <li key={item.href} className="min-w-0">
+              <Link
+                href={item.href}
+                aria-current={isActive ? "page" : undefined}
+                className={`flex h-full flex-col items-center justify-center gap-1 px-1 text-[11px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary sm:text-xs ${
                   isActive
                     ? "text-primary"
-                    : "text-muted-foreground"
-                }
-              `}
-            >
-              <item.icon
-                className={`
-                  w-5 h-5
-                  ${isActive ? "scale-110" : ""}
-                `}
-              />
-
-              <span>{item.label}</span>
-            </Link>
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <item.icon
+                  aria-hidden="true"
+                  className={`size-5 transition-transform motion-safe:duration-200 ${
+                    isActive ? "scale-110" : ""
+                  }`}
+                />
+                <span className="max-w-full truncate">{item.label}</span>
+              </Link>
+            </li>
           );
         })}
-      </div>
-    </div>
+      </ul>
+    </nav>
   );
 }

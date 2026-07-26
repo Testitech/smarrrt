@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { upsertFxRate } from "@/lib/fx"
+import { hasValidCronAuthorization } from "@/lib/env"
 
 // ─────────────────────────────────────────
 // CURRENCY CONFIG
@@ -58,10 +59,21 @@ export async function GET(request: NextRequest) {
     // Prevents anyone from manually triggering the sync
     const authHeader = request.headers.get("authorization")
 
-    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    if (!hasValidCronAuthorization(authHeader)) {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
         { status: 401 }
+      )
+    }
+
+    if (process.env.ENABLE_PLACEHOLDER_FX_SYNC !== "true") {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "FX sync is disabled until a real rate provider is configured.",
+        },
+        { status: 503 }
       )
     }
 
@@ -84,7 +96,10 @@ export async function GET(request: NextRequest) {
           return { currency, success: false }
         }
 
-        await upsertFxRate(currency, cbn, parallel)
+        await upsertFxRate(currency, cbn, parallel, {
+          source: "placeholder",
+          isIndicative: true,
+        })
         console.log(`[cron/sync-fx] Updated ${currency}: CBN=${cbn} Parallel=${parallel}`)
 
         return { currency, success: true }

@@ -27,8 +27,8 @@ export default function Footer() {
 
             <p className="text-base md:text-lg text-muted-foreground leading-relaxed max-w-md">
               Smarrrt helps Nigerian visa applicants plan their Proof of Funds
-              with real embassy timelines, live FX rates, and statement health
-              analysis built around reality — not guesswork.
+              with source-linked reference amounts, indicative FX rates, and
+              practical funding timelines built for clearer decisions.
             </p>
 
             <div className="mt-8 space-y-3">
@@ -38,12 +38,11 @@ export default function Footer() {
 
               <div className="flex flex-wrap gap-3">
                 {[
-                  "🇬🇧 UK",
                   "🇨🇦 Canada",
-                  "🇺🇸 USA",
                   "🇦🇺 Australia",
-                  "🇫🇷 France",
                   "🇳🇱 Netherlands",
+                  "🇫🇮 Finland",
+                  "🇸🇪 Sweden",
                 ].map((country) => (
                   <span
                     key={country}
@@ -63,8 +62,8 @@ export default function Footer() {
             <ul className="space-y-4">
               {[
                 { label: "POF Calculator", href: "/calculator" },
-                { label: "Statement Analyzer", href: "/calculator#analyzer" },
-                { label: "Live FX Rates", href: "/calculator#fx" },
+                { label: "Funding Pace Planner", href: "/calculator#analyzer" },
+                { label: "Indicative FX Rates", href: "/calculator#fx" },
                 { label: "Dashboard", href: "/dashboard" },
               ].map((item) => (
                 <li key={item.href}>
@@ -85,9 +84,10 @@ export default function Footer() {
 
             <div className="rounded-2xl border border-yellow-200 bg-yellow-50 dark:bg-yellow-950/20 dark:border-yellow-900 p-5">
               <p className="text-sm md:text-base leading-relaxed text-yellow-800 dark:text-yellow-300">
-                Smarrrt provides planning guidance only. Embassy requirements,
-                FX rates, and visa policies can change at any time. Always
-                verify directly with official embassy sources before applying.
+                Smarrrt provides planning guidance, not immigration or financial
+                advice. Requirements and FX rates can change, and an indicative
+                rate may not be executable. Recheck the linked official source
+                and your provider&apos;s rate before acting.
               </p>
             </div>
 
@@ -118,9 +118,9 @@ export default function Footer() {
           <div className="flex items-center gap-3 text-sm text-muted-foreground">
             <span>Built with</span>
             <span className="text-primary">●</span>
-            <span>real embassy logic</span>
+            <span>source-reviewed references</span>
             <span className="text-primary">●</span>
-            <span>live FX intelligence</span>
+            <span>indicative FX context</span>
           </div>
         </div>
       </div>

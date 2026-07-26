@@ -21,59 +21,54 @@ import Footer from "@/components/shared/footer";
 const MYTHS = [
   {
     id: 1,
-    country: "🇬🇧 United Kingdom",
-    myth: "UKVI only needs the money for 28 days.",
+    country: "🇨🇦 Canada",
+    myth: "The published living-expense figure is my complete budget.",
     reality:
-      "If you rely on CBN rates, bank delays for Form A/PTA alone can take 3 months. Nigerian applicants need a 90-day buffer minimum.",
+      "Treat the official amount as a planning baseline. Tuition, accompanying family, travel, fees, and exchange-rate movement may increase what you need.",
   },
   {
     id: 2,
-    country: "🇨🇦 Canada",
-    myth: "I'll just borrow the money a week before applying.",
+    country: "🇦🇺 Australia",
+    myth: "A calculator can tell me exactly what will be accepted.",
     reality:
-      "IRCC specifically targets Nigerian applications for financial manipulation. A sudden large deposit is near-certain grounds for refusal.",
+      "A calculator can translate published requirements into an estimate. Your evidence, eligibility, and final assessment remain specific to your application.",
   },
   {
     id: 3,
-    country: "🇺🇸 United States",
-    myth: "I need the money ready when I book my visa interview.",
+    country: "🇳🇱 Netherlands",
+    myth: "Once I reach the target, the source and timing no longer matter.",
     reality:
-      "Your university needs POF BEFORE issuing the I-20. Without the I-20 you cannot even book the interview. Start 6 months earlier.",
+      "Keep traceable records for material deposits and follow the evidence or transfer instructions from your institution and the official authority.",
   },
 ];
 
 const FEATURES = [
   {
     icon: Calendar,
-    title: "Dynamic Embassy Timelines",
+    title: "Source-Reviewed Timelines",
     description:
-      "Select your intake date and we reverse-engineer your exact Safe, Caution, and Risky months to start saving — specific to your country and visa type.",
+      "Choose a supported study destination and intake date to compare your runway with practical planning windows linked to official rule sources.",
   },
   {
     icon: TrendingUp,
-    title: "Live Parallel vs. CBN Rates",
+    title: "Indicative FX Context",
     description:
-      "Stop calculating with official rates you cannot access. We track the real parallel market so you know exactly how much Naira you need today.",
+      "Translate foreign-currency requirements with stored reference rates, then confirm the executable rate with your provider before moving money.",
   },
   {
     icon: Shield,
-    title: "Statement Health Analyzer",
+    title: "Funding Pace Planner",
     description:
-      "Input your current balance and we calculate your safe monthly deposit limit to avoid lump-sum rejection flags at the embassy.",
+      "Compare your balance with the estimate and explore a monthly funding pace. It is a planning heuristic, not an approval or compliance test.",
   },
 ];
 
 const COUNTRIES = [
-  { flag: "🇬🇧", name: "United Kingdom", tag: "28-day rule" },
-  { flag: "🇺🇸", name: "United States", tag: "I-20 required" },
-  { flag: "🇨🇦", name: "Canada", tag: "6-month history" },
-  { flag: "🇦🇺", name: "Australia", tag: "Genuine savings" },
-  { flag: "🇳🇱", name: "Netherlands", tag: "IND strict" },
-  { flag: "🇫🇷", name: "France", tag: "Campus France" },
-  { flag: "🇸🇪", name: "Sweden", tag: "Migrationsverket" },
-  { flag: "🇫🇮", name: "Finland", tag: "Migri portal" },
-  { flag: "🇲🇹", name: "Malta", tag: "Identity Malta" },
-  { flag: "🇪🇸", name: "Spain", tag: "Apostille needed" },
+  { flag: "🇨🇦", name: "Canada", tag: "IRCC study permit" },
+  { flag: "🇦🇺", name: "Australia", tag: "Student visa funds" },
+  { flag: "🇳🇱", name: "Netherlands", tag: "IND study amount" },
+  { flag: "🇫🇮", name: "Finland", tag: "Migri income requirement" },
+  { flag: "🇸🇪", name: "Sweden", tag: "Maintenance amount" },
 ];
 
 const STEPS = [
@@ -81,7 +76,7 @@ const STEPS = [
     step: "01",
     title: "Select your destination",
     description:
-      "Choose your target country and visa purpose from our database of embassy rules.",
+      "Choose a supported destination and study route from our source-reviewed rule set.",
   },
   {
     step: "02",
@@ -91,15 +86,15 @@ const STEPS = [
   },
   {
     step: "03",
-    title: "See your Naira target",
+    title: "See your Naira estimate",
     description:
-      "Get the exact amount in Naira at the real parallel rate — with a volatility buffer built in.",
+      "Convert the reference amount using a stored indicative FX rate and a clearly disclosed planning buffer.",
   },
   {
     step: "04",
-    title: "Follow your deposit plan",
+    title: "Explore your funding pace",
     description:
-      "Our Statement Health Analyzer tells you exactly how much to deposit each month to stay under the lump-sum radar.",
+      "Use a monthly planning heuristic to compare your balance, target, and remaining preparation time.",
   },
 ];
 
@@ -128,9 +123,9 @@ export default function LandingPage() {
               </h1>
 
               <p className="text-lg md:text-xl lg:text-2xl text-muted-foreground mb-8 text-balance leading-relaxed">
-                Don&apos;t let FX volatility or embassy lump-sum flags ruin your
-                visa chances. Map your exact Naira target, track parallel market
-                rates, and build a bulletproof bank statement timeline.
+                Turn source-reviewed requirement references and indicative FX
+                rates into a practical Naira estimate, then map a preparation
+                timeline you can revisit as your plans change.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Button asChild size="lg" className="text-base">
@@ -153,8 +148,8 @@ export default function LandingPage() {
               <div className="mt-10 flex flex-wrap justify-center gap-6">
                 {[
                   "✓ No credit card required",
-                  "✓ Live parallel market rates",
-                  "✓ 10 countries supported",
+                  "✓ Source-linked rule references",
+                  "✓ 5 study destinations supported",
                 ].map((signal) => (
                   <span
                     key={signal}
@@ -180,11 +175,11 @@ export default function LandingPage() {
                 The Nigerian Reality
               </Badge>
               <h2 className="text-4xl md:text-5xl xl:text-6xl font-bold text-background mb-6 leading-tight text-balance">
-                What the Embassy Doesn&apos;t Tell You
+                What a Basic Calculator Misses
               </h2>
               <p className="text-lg md:text-xl text-background/70 max-w-3xl mx-auto leading-relaxed text-balance">
-                Generic visa guides were not written for Nigerians. Here is what
-                actually happens when you apply from Nigeria.
+                A useful plan separates official reference amounts from FX
+                assumptions, timing heuristics, and the evidence unique to you.
               </p>
             </div>
 
@@ -271,7 +266,7 @@ export default function LandingPage() {
                 Features
               </Badge>
               <h2 className="text-4xl md:text-5xl xl:text-6xl md:text-4xl font-bold mb-6 text-balance leading-tight">
-                Everything you need to get approved
+                Everything you need to plan with confidence
               </h2>
               <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed text-balance">
                 Built specifically around the financial realities Nigerian visa
@@ -308,12 +303,12 @@ export default function LandingPage() {
                 Supported Countries
               </Badge>
               <h2 className="text-4xl md:text-5xl xl:text-6xl font-bold mb-6 leading-tight text-balance">
-                10 countries. Every major visa route.
+                5 study destinations. Source-linked planning.
               </h2>
               <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed text-balance">
-                From the UK&apos;s 28-day rule to Canada&apos;s organic history
-                requirement — each country has its own rules and we know all of
-                them.
+                Each active reference is reviewed against an official source.
+                Requirements can change, so Smarrrt keeps that source within
+                reach for your final check.
               </p>
             </div>
 
@@ -345,17 +340,15 @@ export default function LandingPage() {
                   <AlertTriangle className="w-8 h-8 text-yellow-600 flex-shrink-0 mt-1" />
                   <div>
                     <h3 className="text-2xl lg:text-3xl font-bold">
-                      The Lump Sum Trap — Read This Before You Apply
+                      Document the Story Behind Your Funds
                     </h3>
                     <p className="text-base lg:text-lg text-yellow-700 dark:text-yellow-500 leading-relaxed">
-                      Embassies like Canada&apos;s IRCC and Australia&apos;s DHA
-                      train case officers to detect &quot;account dumping&quot;
-                      — when applicants suddenly deposit large sums just before
-                      applying. A ₦500,000 account that suddenly shows
-                      ₦15,000,000 is an automatic red flag for financial
-                      manipulation. Smarrrt helps you build your balance
-                      gradually so your statement tells a credible, organic
-                      financial story.
+                      Material or recent deposits may need a clear explanation
+                      and supporting records. Keep traceable evidence of where
+                      your funds came from and follow the official instructions
+                      for your route. Smarrrt&apos;s funding pace is a planning
+                      heuristic; it does not predict how an application will be
+                      assessed.
                     </p>
                   </div>
                 </div>
@@ -371,8 +364,8 @@ export default function LandingPage() {
               Your visa is too important to leave to guesswork.
             </h2>
             <p className="text-xl md:text-2xl text-background/70 leading-relaxed">
-              Let&apos;s build your financial strategy — based on real embassy
-              rules and real Naira rates.
+              Build your financial strategy from source-reviewed references,
+              indicative Naira estimates, and a timeline you can act on.
             </p>
             <Button asChild size="lg" className="text-lg px-8 py-7 rounded-xl">
               <Link href="/calculator">

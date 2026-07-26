@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import Link from "next/link";
-import { ArrowLeft, RefreshCw } from "lucide-react";
+import { AlertCircle, ArrowLeft } from "lucide-react";
 import type { PofStatus } from "@/types";
 
 // ─────────────────────────────────────────
@@ -18,9 +18,9 @@ import type { PofStatus } from "@/types";
 // ─────────────────────────────────────────
 
 type Props = {
-  params: {
+  params: Promise<{
     slug: string;
-  };
+  }>;
 };
 
 // ─────────────────────────────────────────
@@ -29,69 +29,94 @@ type Props = {
 
 const STATUS_CONFIG = {
   safe: {
-    label: "Safe Period",
+    label: "Planning: safer window",
     className:
       "bg-green-100 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-400 dark:border-green-800",
   },
   caution: {
-    label: "Caution Period",
+    label: "Planning: caution window",
     className:
       "bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-950 dark:text-yellow-400 dark:border-yellow-800",
   },
   risky: {
-    label: "Risky Period",
+    label: "Planning: late window",
     className:
       "bg-red-100 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-400 dark:border-red-800",
   },
 };
+
+const AMOUNT_SCOPE_LABELS = {
+  TOTAL_ESTIMATE: "Configured total estimate",
+  LIVING_COSTS_ONLY: "Configured living-cost amount",
+  VARIABLE_REQUIREMENT: "Variable requirement; verify inputs",
+} as const;
+
+function wholeMonthsBetween(start: Date, end: Date) {
+  if (end <= start) return 0;
+
+  let months =
+    (end.getUTCFullYear() - start.getUTCFullYear()) * 12 +
+    end.getUTCMonth() -
+    start.getUTCMonth();
+
+  if (end.getUTCDate() < start.getUTCDate()) {
+    months -= 1;
+  }
+
+  return Math.max(0, months);
+}
+
+function formatSource(source: string) {
+  return source.replaceAll(/[-_]/g, " ").replace(/\b\w/g, (letter) =>
+    letter.toUpperCase(),
+  );
+}
 
 // ─────────────────────────────────────────
 // PAGE
 // ─────────────────────────────────────────
 
 export default async function StrategyPage({ params }: Props) {
-  const { slug } = params;
+  const { slug } = await params;
+  const now = new Date();
   const session = await auth();
 
   if (!session?.user?.id) {
     redirect("/signin");
   }
 
+  if (!session.user.isActive) {
+    redirect("/signin?error=AccountDisabled");
+  }
+
   // Fetch timeline
-  const timeline = await prisma.userTimeline.findUnique({
-    where: { slug },
+  const timeline = await prisma.userTimeline.findFirst({
+    where: { slug, userId: session.user.id },
     include: {
       country: true,
       purpose: true,
     },
   });
 
-  // Not found or doesn't belong to this user
-  if (!timeline || timeline.userId !== session.user.id) {
+  if (!timeline) {
     notFound();
   }
 
-  // Fetch live FX rate
+  // Fetch the latest stored or fallback FX reference.
   const fxRate = await getFxRate(timeline.country.currencyCode);
 
   // Fetch POF rule
-  const rule = await prisma.pofRule.findUnique({
+  const rule = await prisma.pofRule.findFirst({
     where: {
-      countryId_purposeId: {
-        countryId: timeline.countryId,
-        purposeId: timeline.purposeId,
-      },
+      countryId: timeline.countryId,
+      purposeId: timeline.purposeId,
+      isActive: true,
+      AND: [
+        { OR: [{ effectiveFrom: null }, { effectiveFrom: { lte: now } }] },
+        { OR: [{ effectiveTo: null }, { effectiveTo: { gte: now } }] },
+      ],
     },
   });
-
-  // Fetch study intakes if applicable
-  let studyIntakes: number[] = [];
-  if (timeline.purpose.slug === "study") {
-    const intakes = await prisma.studyIntake.findMany({
-      where: { countryId: timeline.countryId },
-    });
-    studyIntakes = intakes.map((i) => i.intakeMonth);
-  }
 
   // Recalculate with latest FX rates
   const calculation = rule
@@ -100,7 +125,7 @@ export default async function StrategyPage({ params }: Props) {
         fxRate,
         intakeDate: timeline.intakeDate,
         currentBalanceNaira: timeline.currentBalance,
-        intakeMonths: studyIntakes,
+        asOfDate: now,
       })
     : null;
 
@@ -145,9 +170,14 @@ export default async function StrategyPage({ params }: Props) {
         })
       : "";
 
-  const currentMonth = new Date().getMonth();
-  const currentStatus: PofStatus = calculation?.currentStatus ?? "risky";
-  const statusConfig = STATUS_CONFIG[currentStatus];
+  const currentStatus: PofStatus | null = calculation?.currentStatus ?? null;
+  const statusConfig = currentStatus
+    ? STATUS_CONFIG[currentStatus]
+    : {
+        label: "Planning rule unavailable",
+        className: "bg-muted text-muted-foreground border-border",
+      };
+  const monthsAvailable = wholeMonthsBetween(now, timeline.intakeDate);
 
   return (
     <div className="space-y-8">
@@ -185,41 +215,60 @@ export default async function StrategyPage({ params }: Props) {
           </div>
         </div>
 
-        <Button variant="outline" size="sm" disabled className="rounded-xl">
-          <RefreshCw className="w-4 h-4 mr-2" />
-          Recalculate
-        </Button>
       </div>
+
+      <Card className="rounded-2xl border-border/60 bg-muted/30">
+        <CardContent className="p-4 text-xs leading-relaxed text-muted-foreground">
+          <p>
+            This page recomputes your saved inputs with the current active rule
+            and latest stored FX reference. The saved snapshot from{" "}
+            {timeline.calculatedAt.toLocaleString("en-NG", {
+              dateStyle: "medium",
+              timeStyle: "short",
+            })}
+            {" "}recorded {formatNaira(timeline.targetAmount)} using rule{" "}
+            {timeline.ruleVersion ?? "not recorded"}
+            {timeline.fxRateUsed
+              ? ` and an FX rate of NGN ${timeline.fxRateUsed.toLocaleString("en-NG")}`
+              : ""}
+            .
+          </p>
+        </CardContent>
+      </Card>
 
       {/* ── FINANCIAL SUMMARY ── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
           {
-            label: "POF Required",
-            value: formatForeign(
-              rule?.minAmountForeign ?? 0,
-              timeline.country.currencyCode,
-            ),
-            sub: timeline.country.currencyCode,
+            label: "Configured Rule Amount",
+            value: rule
+              ? formatForeign(
+                  rule.minAmountForeign,
+                  timeline.country.currencyCode,
+                )
+              : "Unavailable",
+            sub: rule
+              ? AMOUNT_SCOPE_LABELS[rule.amountScope]
+              : "No active planning rule",
           },
           {
-            label: "Naira Target",
+            label: "Estimated Naira Target",
             value: formatNaira(
               calculation?.recommendedNairaTarget ?? timeline.targetAmount,
             ),
-            sub: "Parallel + 5% buffer",
+            sub: "Parallel reference + configured buffer",
           },
           {
-            label: "Monthly Deposit",
+            label: "Monthly Contribution",
             value: formatNaira(
               calculation?.safeMonthlyDeposit ?? timeline.monthlyDeposit,
             ),
-            sub: "Safe amount",
+            sub: "Illustrative planning amount",
           },
           {
-            label: "Parallel Rate",
+            label: "Parallel Reference",
             value: `₦${fxRate.parallelRate.toLocaleString("en-NG")}`,
-            sub: `Per ${timeline.country.currencyCode}`,
+            sub: `Per ${timeline.country.currencyCode} · ${fxRate.isIndicative ? "indicative" : "stored"}`,
           },
         ].map((item) => (
           <Card
@@ -239,6 +288,25 @@ export default async function StrategyPage({ params }: Props) {
         ))}
       </div>
 
+      <Card className="rounded-2xl border-primary/20 bg-primary/5">
+        <CardContent className="flex gap-3 p-4">
+          <AlertCircle
+            aria-hidden="true"
+            className="mt-0.5 size-4 shrink-0 text-primary"
+          />
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            This estimate uses the {formatSource(fxRate.source)} FX reference,
+            recorded{" "}
+            {new Date(fxRate.lastUpdated).toLocaleString("en-NG", {
+              dateStyle: "medium",
+              timeStyle: "short",
+            })}
+            . It is {fxRate.isIndicative ? "indicative and " : ""}not a
+            transaction quote. Confirm the applicable rate before acting.
+          </p>
+        </CardContent>
+      </Card>
+
       {/* ── CALENDAR ── */}
       <section className="space-y-4">
         <div>
@@ -247,13 +315,13 @@ export default async function StrategyPage({ params }: Props) {
           </h2>
 
           <p className="text-sm text-muted-foreground mt-1">
-            Your safest timeline for building embassy compliant proof of funds.
+            A configured planning timeline—not a finding that funds are embassy
+            compliant or that an application will be approved.
           </p>
         </div>
         {calculation ? (
           <PofCalendar
             monthlyBreakdown={calculation.monthlyBreakdown}
-            currentMonth={currentMonth}
           />
         ) : (
           <p className="text-muted-foreground text-sm">
@@ -267,7 +335,7 @@ export default async function StrategyPage({ params }: Props) {
         <PofAnalysis
           analysisText={analysisText}
           nigerianSpecific={nigeriaSpecific}
-          currentStatus={currentStatus as PofStatus}
+          currentStatus={calculation.currentStatus}
           requiresHistory={rule.requiresHistory}
           statementMonths={rule.statementMonths}
           countryName={timeline.country.name}
@@ -281,9 +349,7 @@ export default async function StrategyPage({ params }: Props) {
         <StatementAnalyzer
           recommendedNairaTarget={calculation.recommendedNairaTarget}
           currentBalanceNaira={timeline.currentBalance}
-          safeMonthlyDeposit={calculation.safeMonthlyDeposit}
-          lumpSumRisk={calculation.lumpSumRisk}
-          monthsAvailable={calculation.monthlyBreakdown.length}
+          monthsAvailable={monthsAvailable}
           currencyCode={timeline.country.currencyCode}
           minAmountForeign={rule?.minAmountForeign ?? 0}
         />

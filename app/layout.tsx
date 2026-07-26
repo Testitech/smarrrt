@@ -8,13 +8,18 @@ export const metadata: Metadata = {
     default: "Smarrrt — Visa POF Strategy Dashboard",
     template: "%s | Smarrrt",
   },
+  icons: {
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+    ],
+  },
   description:
-    "Stop guessing your Proof of Funds. Plan your exact Naira target, track parallel market rates, and build a bulletproof bank statement timeline for UK, Canada, US, and beyond.",
+    "Build a source-reviewed Proof of Funds estimate, compare indicative FX rates, and map a practical preparation timeline for supported study destinations.",
   keywords: [
     "proof of funds Nigeria",
     "visa bank statement Nigeria",
-    "UK visa POF calculator",
-    "Canada visa bank statement",
+    "Canada study permit POF calculator",
+    "Australia student visa funds",
     "Nigerian visa financial requirements",
     "parallel market rate visa",
   ],
@@ -24,14 +29,14 @@ export const metadata: Metadata = {
     locale: "en_NG",
     title: "Smarrrt — Visa POF Strategy Dashboard",
     description:
-      "The smart way for Nigerians to plan their visa Proof of Funds. Live parallel rates, embassy timelines, and statement health analysis.",
+      "Source-reviewed reference amounts, indicative FX estimates, and practical Proof of Funds preparation timelines for Nigerians.",
     siteName: "Smarrrt",
   },
   twitter: {
     card: "summary_large_image",
     title: "Smarrrt — Visa POF Strategy Dashboard",
     description:
-      "Stop guessing your POF. Plan your exact Naira target with live parallel market rates.",
+      "Turn source-reviewed POF references and indicative FX rates into a practical Naira planning estimate.",
   },
   robots: {
     index: true,

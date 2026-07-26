@@ -6,11 +6,32 @@
 generator client {
   provider = "prisma-client-js"
   output   = "../generated/prisma"
-
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum EmailKind {
+  WELCOME
+}
+
+enum EmailStatus {
+  PENDING
+  PROCESSING
+  SENT
+  FAILED
+}
+
+enum PofAmountScope {
+  TOTAL_ESTIMATE
+  LIVING_COSTS_ONLY
+  VARIABLE_REQUIREMENT
 }
 
 // ─────────────────────────────────────────
@@ -18,23 +39,31 @@ datasource db {
 // ─────────────────────────────────────────
 
 model User {
-  id            String   @id @default(cuid())
+  id            String    @id @default(cuid())
   name          String?
-  email         String?  @unique
-  emailVerified DateTime? @default(now())
-  image         String
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  role          UserRole  @default(USER)
+  isActive      Boolean   @default(true)
+  lastLoginAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   // relations
 
-  accounts  Account[]
-  sessions  Session[]
-  timelines UserTimeline[]
+  accounts        Account[]
+  sessions        Session[]
+  timelines       UserTimeline[]
+  emailDeliveries EmailDelivery[]
+  auditLogs       AdminAuditLog[] @relation("AuditActor")
+
+  @@index([role, isActive])
+  @@index([createdAt])
 }
 
 model Account {
-  id                String  @default(cuid())
+  id                String  @id @default(cuid())
   userId            String
   type              String
   provider          String
@@ -53,7 +82,7 @@ model Account {
 }
 
 model Session {
-  id           String   @default(cuid())
+  id           String   @id @default(cuid())
   sessionToken String   @unique
   userId       String
   expires      DateTime
@@ -62,7 +91,7 @@ model Session {
 }
 
 model VerificationToken {
-  identifier String   @default(cuid())
+  identifier String
   token      String   @unique
   expires    DateTime
 
@@ -74,7 +103,7 @@ model VerificationToken {
 // ─────────────────────────────────────────
 
 model Country {
-  id           String  @id @unique
+  id           String  @id
   name         String  @unique
   isoCode      String  @unique
   currencyCode String
@@ -90,7 +119,7 @@ model Country {
 }
 
 model VisaPurpose {
-  id          String  @id @unique
+  id          String  @id
   name        String  @unique
   slug        String  @unique // eg "study", "work", "tourism"
   icon        String
@@ -107,7 +136,7 @@ model VisaPurpose {
 // ─────────────────────────────────────────
 
 model PofRule {
-  id        String @default(cuid())
+  id        String @id @default(cuid())
   countryId String
   purposeId String
 
@@ -128,8 +157,21 @@ model PofRule {
   analysisText     String @db.Text
   nigerianSpecific String @db.Text
 
-  // Statement period embassy checks (in months)
-  statementMonths Int @default(3)
+  // Evidence coverage is distinct from a statutory holding period and from
+  // the maximum permitted age of a document.
+  statementMonths    Int? // transaction-history coverage in months
+  documentMaxAgeDays Int?
+
+  // Operational controls and provenance. Rules should never be presented as
+  // current without a source and a recent review date.
+  isActive          Boolean        @default(true)
+  ruleVersion       String         @default("2026.1")
+  holdingPeriodDays Int?
+  amountScope       PofAmountScope @default(VARIABLE_REQUIREMENT)
+  sourceUrl         String?
+  sourceCheckedAt   DateTime?
+  effectiveFrom     DateTime?
+  effectiveTo       DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -144,7 +186,7 @@ model PofRule {
 // Study-specific intake months per country
 
 model StudyIntake {
-  id           String  @default(cuid())
+  id           String  @id @default(cuid())
   countryId    String
   intakeMonth  Int // 1 = Jan
   intakeName   String // e.g. "September Main Intake"
@@ -163,6 +205,8 @@ model FxRate {
   currencyCode String   @id // e.g. "GBP"
   cbnRate      Float // Official CBN rate
   parallelRate Float // Black market / parallel rate
+  source       String   @default("seed-reference")
+  isIndicative Boolean  @default(true)
   lastUpdated  DateTime @updatedAt
 
   // Relations
@@ -174,7 +218,7 @@ model FxRate {
 // ─────────────────────────────────────────
 
 model UserTimeline {
-  id        String @default(cuid())
+  id        String @id @default(cuid())
   userId    String
   countryId String
   purposeId String
@@ -182,6 +226,7 @@ model UserTimeline {
 
   // User inputs
   intakeDate     DateTime
+  intakeKey      String // UTC YYYY-MM, used for deterministic idempotency
   currentBalance Float // In Naira
   targetAmount   Float // Calculated POF in Naira (parallel rate + buffer)
   monthlyDeposit Float // Safe monthly deposit from analyzer
@@ -193,6 +238,9 @@ model UserTimeline {
 
   // Status at time of save
   currentStatus String // "safe" | "caution" | "risky"
+  calculatedAt  DateTime @default(now())
+  ruleVersion   String?
+  fxRateUsed    Float?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -201,4 +249,60 @@ model UserTimeline {
   user    User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   country Country     @relation(fields: [countryId], references: [id])
   purpose VisaPurpose @relation(fields: [purposeId], references: [id])
+
+  @@unique([userId, countryId, purposeId, intakeKey])
+  @@index([userId, updatedAt])
+  @@index([countryId, purposeId])
 }
+
+model EmailDelivery {
+  id                String      @id @default(cuid())
+  eventKey          String      @unique
+  kind              EmailKind
+  status            EmailStatus @default(PENDING)
+  userId            String
+  recipient         String
+  payload           Json
+  attempts          Int         @default(0)
+  nextAttemptAt     DateTime    @default(now())
+  lockedAt          DateTime?
+  lastAttemptAt     DateTime?
+  sentAt            DateTime?
+  providerMessageId String?     @unique
+  lastError         String?     @db.Text
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status, nextAttemptAt])
+  @@index([userId, createdAt])
+}
+
+model AdminAuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  action     String
+  entityType String?
+  entityId   String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  actor User? @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([actorId, createdAt])
+  @@index([entityType, entityId])
+}
+
+
+
+/*
+best way to remebeer
+
+I changed schema.prisma and need a new migration
+→ migrate dev
+
+A migration already exists and just needs applying
+→ migrate deploy
+
+*/

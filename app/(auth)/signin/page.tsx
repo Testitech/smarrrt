@@ -7,9 +7,29 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-// import { Chrome } from "lucide-react";
+import Link from "next/link";
 
-export default function SignInPage() {
+function authErrorMessage(error: string | string[] | undefined) {
+  const code = Array.isArray(error) ? error[0] : error;
+
+  if (code === "AccessDenied" || code === "AccountDisabled") {
+    return "This account is currently unavailable. Contact support if you believe this is a mistake.";
+  }
+
+  if (code) {
+    return "We could not complete that sign-in. Please try again, or use the other sign-in method.";
+  }
+
+  return null;
+}
+
+export default async function SignInPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string | string[] }>;
+}) {
+  const errorMessage = authErrorMessage((await searchParams).error);
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4 py-16">
       {/* Background decoration */}
@@ -41,11 +61,20 @@ export default function SignInPage() {
             </CardTitle>
             <CardDescription className="text-lg leading-relaxed mt-3">
               Create a free account to view your personalised timeline, save
-              your dashboard, and receive FX drop alerts.
+              your strategy, and revisit the rule and FX references behind it.
             </CardDescription>
           </CardHeader>
 
           <CardContent className="space-y-6 px-8 pb-8">
+            {errorMessage ? (
+              <div
+                role="alert"
+                className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+              >
+                {errorMessage}
+              </div>
+            ) : null}
+
             {/* Google Sign In */}
             <form
               action={async () => {
@@ -77,8 +106,14 @@ export default function SignInPage() {
             <form
               action={async (formData: FormData) => {
                 "use server";
+                const value = formData.get("email");
+                if (typeof value !== "string") return;
+
+                const email = value.trim().toLowerCase();
+                if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return;
+
                 await signIn("resend", {
-                  email: formData.get("email") as string,
+                  email,
                   redirectTo: "/dashboard",
                 });
               }}
@@ -89,6 +124,8 @@ export default function SignInPage() {
                 type="email"
                 placeholder="Enter your email address"
                 required
+                autoComplete="email"
+                inputMode="email"
                 className="w-full h-14 px-5 text-base border border-input rounded-xl bg-background focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent placeholder:text-muted-foreground"
               />
               <Button
@@ -104,14 +141,14 @@ export default function SignInPage() {
             {/* Fine print */}
             <p className="text-sm text-center text-muted-foreground pt-4 leading-relaxed">
               By continuing, you agree to our{" "}
-              <a href="/terms" className="underline hover:text-foreground">
+              <Link href="/terms" className="underline hover:text-foreground">
                 Terms of Use
-              </a>{" "}
+              </Link>{" "}
               and{" "}
-              <a href="/privacy" className="underline hover:text-foreground">
+              <Link href="/privacy" className="underline hover:text-foreground">
                 Privacy Policy
-              </a>
-              . We will never share your data.
+              </Link>
+              . We handle your data as described in the Privacy Policy.
             </p>
           </CardContent>
         </Card>
@@ -119,12 +156,12 @@ export default function SignInPage() {
         {/* Back link */}
         <p className="text-center text-base text-muted-foreground mt-8">
           Just browsing?{" "}
-          <a
+          <Link
             href="/calculator"
             className="text-primary font-medium hover:underline"
           >
             Use the calculator without signing in
-          </a>
+          </Link>
         </p>
       </div>
     </div>

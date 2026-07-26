@@ -1,60 +1,45 @@
-// import "server-only";
-// import { PrismaPg } from "@prisma/adapter-pg";
-// import { PrismaClient } from "../generated/prisma";
-// import { Pool } from "pg";
-
-// const globalForPrisma = globalThis as unknown as {
-//   prisma: PrismaClient | undefined;
-// };
-
-// const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-// const adapter = new PrismaPg(pool);
-
-// export const prisma =
-//   globalForPrisma.prisma ??
-//   new PrismaClient({
-//     adapter,
-//     log:
-//       process.env.NODE_ENV === "development"
-//         ? ["query", "error", "warn"]
-//         : ["error"],
-//   });
-
-// if (process.env.NODE_ENV !== "production") {
-//   globalForPrisma.prisma = prisma;
-// }
-
 import "server-only";
+
 import { PrismaPg } from "@prisma/adapter-pg";
-import { PrismaClient } from "../generated/prisma";
 import { Pool } from "pg";
 
-const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined;
+import { PrismaClient } from "../generated/prisma";
+import { getDatabasePoolSize, getDatabaseUrl } from "./env";
+
+const globalForPrisma = globalThis as typeof globalThis & {
+  smarrrtPrisma?: PrismaClient;
+  smarrrtPostgresPool?: Pool;
 };
 
+function createPool(): Pool {
+  const pool = new Pool({
+    connectionString: getDatabaseUrl(),
+    connectionTimeoutMillis: 10_000,
+    idleTimeoutMillis: 30_000,
+    max: getDatabasePoolSize(),
+  });
 
-const isDev = process.env.NODE_ENV === "development";
-const logConfig: ("query" | "error" | "warn")[] = isDev
-  ? ["query", "error", "warn"]
-  : ["error"];
+  pool.on("error", (error) => {
+    console.error("[database] An idle PostgreSQL connection failed", error);
+  });
 
-
-let adapterInstance: PrismaPg | undefined = undefined;
-
-if (process.env.DATABASE_URL) {
-  const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-  adapterInstance = new PrismaPg(pool);
+  return pool;
 }
 
+const pool = globalForPrisma.smarrrtPostgresPool ?? createPool();
+const adapter = new PrismaPg(pool);
 
 export const prisma =
-  globalForPrisma.prisma ??
+  globalForPrisma.smarrrtPrisma ??
   new PrismaClient({
-    log: logConfig,
-    ...(adapterInstance ? { adapter: adapterInstance } : {}),
+    adapter,
+    log:
+      process.env.NODE_ENV === "development"
+        ? ["query", "error", "warn"]
+        : ["error"],
   });
 
 if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = prisma;
+  globalForPrisma.smarrrtPrisma = prisma;
+  globalForPrisma.smarrrtPostgresPool = pool;
 }
