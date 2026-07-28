@@ -1,10 +1,18 @@
 "use client";
 
-import { useState, useMemo, useRef, useEffect } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { SmarrrtLogo } from "@/components/shared/smarrrt-logo";
 import { formatNaira } from "@/lib/format";
 import {
   Select,
@@ -28,8 +36,6 @@ import {
 
 // ── Data & helpers from dedicated modules ──
 import {
-  COUNTRIES,
-  PURPOSES,
   MONTH_NAMES,
   FULL_MONTH_NAMES,
   INTAKE_MONTHS,
@@ -53,7 +59,10 @@ type Preview = {
     riskyBufferMonths: number;
     requiresHistory: boolean;
     analysisText: string;
-    amountScope: "TOTAL_ESTIMATE" | "LIVING_COSTS_ONLY" | "VARIABLE_REQUIREMENT";
+    amountScope:
+      | "TOTAL_ESTIMATE"
+      | "LIVING_COSTS_ONLY"
+      | "VARIABLE_REQUIREMENT";
     sourceUrl: string | null;
   };
   calculation: {
@@ -70,6 +79,40 @@ type Preview = {
 // PAGE
 // ─────────────────────────────────────────
 
+type SupportedPurpose = {
+  id: string;
+  name: string;
+  slug: string;
+  icon: string;
+  amountScope:
+    | "TOTAL_ESTIMATE"
+    | "LIVING_COSTS_ONLY"
+    | "VARIABLE_REQUIREMENT";
+};
+
+type SupportedCountry = {
+  id: string;
+  name: string;
+  isoCode: string;
+  currencyCode: string;
+  flagEmoji: string;
+  purposes: SupportedPurpose[];
+};
+
+function subscribeToAuthMarker() {
+  return () => {};
+}
+
+function readAuthMarker() {
+  if (typeof document === "undefined") return false;
+
+  return (
+    document
+      .querySelector("[data-authenticated]")
+      ?.getAttribute("data-authenticated") === "true"
+  );
+}
+
 export default function CalculatorPage() {
   const router = useRouter();
   const [selectedCountry, setSelectedCountry] = useState("");
@@ -78,10 +121,19 @@ export default function CalculatorPage() {
   const [intakeYear, setIntakeYear] = useState("");
   const [showTeaser, setShowTeaser] = useState(false);
   const [preview, setPreview] = useState<Preview | null>(null);
-  const [generateState, setGenerateState] = useState<"idle" | "loading" | "error">("idle");
+  const [generateState, setGenerateState] = useState<
+    "idle" | "loading" | "error"
+  >("idle");
   const [generateError, setGenerateError] = useState("");
+  const [options, setOptions] = useState<SupportedCountry[]>([]);
+  const [optionsState, setOptionsState] = useState<
+    "loading" | "ready" | "error"
+  >("loading");
 
-  const country = COUNTRIES.find((c) => c.id === selectedCountry);
+  const country = options.find((c) => c.isoCode === selectedCountry);
+  const selectedPurposeRecord = country?.purposes.find(
+    (purpose) => purpose.slug === selectedPurpose,
+  );
   const teaser = preview
     ? {
         minAmount: preview.rule.minAmountForeign,
@@ -105,9 +157,14 @@ export default function CalculatorPage() {
   const timelineStatus = preview?.calculation.currentStatus ?? null;
 
   const nairaTarget = preview?.calculation.recommendedNairaTarget ?? 0;
+  const isVariableRequirement =
+    preview?.rule.amountScope === "VARIABLE_REQUIREMENT";
 
   const canGenerate =
-    !!selectedCountry && !!selectedPurpose && !!intakeMonth && !!intakeYear;
+    !!selectedCountry &&
+    !!selectedPurposeRecord &&
+    !!intakeMonth &&
+    !!intakeYear;
 
   function intakeDateValue() {
     if (!intakeMonth || !intakeYear) return null;
@@ -147,7 +204,9 @@ export default function CalculatorPage() {
       setPreview(null);
       setGenerateState("error");
       setGenerateError(
-        error instanceof Error ? error.message : "Unable to calculate this plan.",
+        error instanceof Error
+          ? error.message
+          : "Unable to calculate this plan.",
       );
     }
   }
@@ -175,20 +234,51 @@ export default function CalculatorPage() {
   const [currentBalance, setCurrentBalance] = useState("");
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [saveError, setSaveError] = useState("");
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const isAuthenticated = useSyncExternalStore(
+    subscribeToAuthMarker,
+    readAuthMarker,
+    () => false,
+  );
   const redirectTimeout = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    setIsAuthenticated(
-      document
-        .querySelector("[data-authenticated]")
-        ?.getAttribute("data-authenticated") === "true",
-    );
-
     return () => {
       if (redirectTimeout.current) {
         clearTimeout(redirectTimeout.current);
       }
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadOptions() {
+      try {
+        const response = await fetch("/api/pof-options", {
+          headers: { Accept: "application/json" },
+        });
+        const result = await response.json();
+
+        if (!response.ok || !result.success || !Array.isArray(result.data)) {
+          throw new Error(result.error ?? "Unable to load supported options.");
+        }
+
+        if (!cancelled) {
+          setOptions(result.data as SupportedCountry[]);
+          setOptionsState("ready");
+        }
+      } catch {
+        if (!cancelled) {
+          setOptions([]);
+          setOptionsState("error");
+        }
+      }
+    }
+
+    void loadOptions();
+
+    return () => {
+      cancelled = true;
     };
   }, []);
 
@@ -249,19 +339,16 @@ export default function CalculatorPage() {
       {/* Header */}
       <div className="border-b border-border bg-background/95 backdrop-blur sticky top-0 z-40">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-sm">
-                Sm
-              </span>
-            </div>
-            <span className="font-bold text-lg">
-              Sma<span className="text-primary">rrr</span>t
-            </span>
-          </div>
-          <Button asChild variant="outline" size="sm">
-            <a href="/signin">Sign in to save</a>
-          </Button>
+          <SmarrrtLogo href="/" variant="compact" />
+          {isAuthenticated ? (
+            <Button asChild variant="outline" size="sm">
+              <Link href="/dashboard">Dashboard</Link>
+            </Button>
+          ) : (
+            <Button asChild variant="outline" size="sm">
+              <Link href="/signin">Sign in to save</Link>
+            </Button>
+          )}
         </div>
       </div>
 
@@ -300,18 +387,26 @@ export default function CalculatorPage() {
                   value={selectedCountry}
                   onValueChange={(val) => {
                     setSelectedCountry(val);
+                    setSelectedPurpose("");
                     setPreview(null);
                     setGenerateError("");
                     setShowTeaser(false);
                   }}
+                  disabled={optionsState !== "ready"}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select country..." />
+                    <SelectValue
+                      placeholder={
+                        optionsState === "loading"
+                          ? "Loading destinations..."
+                          : "Select country..."
+                      }
+                    />
                   </SelectTrigger>
                   <SelectContent>
-                    {COUNTRIES.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>
-                        {c.flag} {c.name}
+                    {options.map((c) => (
+                      <SelectItem key={c.id} value={c.isoCode}>
+                        {c.flagEmoji} {c.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -329,18 +424,30 @@ export default function CalculatorPage() {
                     setGenerateError("");
                     setShowTeaser(false);
                   }}
+                  disabled={!country}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select purpose..." />
+                    <SelectValue
+                      placeholder={
+                        country
+                          ? "Select supported purpose..."
+                          : "Select country first"
+                      }
+                    />
                   </SelectTrigger>
                   <SelectContent>
-                    {PURPOSES.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>
+                    {country?.purposes.map((p) => (
+                      <SelectItem key={p.id} value={p.slug}>
                         {p.icon} {p.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
+                {country && country.purposes.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">
+                    No active POF rules are currently available.
+                  </p>
+                ) : null}
               </div>
 
               {/* Intake Month */}
@@ -407,11 +514,17 @@ export default function CalculatorPage() {
                 </>
               ) : (
                 <>
-                  Generate My POF Timeline
+                  Generate Timeline
                   <ArrowRight className="ml-2 size-4" />
                 </>
               )}
             </Button>
+            {optionsState === "error" ? (
+              <p role="alert" className="text-sm text-destructive">
+                Supported destinations could not be loaded. Please refresh and
+                try again.
+              </p>
+            ) : null}
             {generateError ? (
               <p role="alert" className="text-sm text-destructive">
                 {generateError}
@@ -482,14 +595,16 @@ export default function CalculatorPage() {
               </Card>
 
               {/* FX snapshot */}
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 <Card className="border-primary/20 bg-primary/5">
                   <CardContent className="p-4">
                     <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">
                       Base living funds
                     </p>
-                    <p className="text-lg font-bold naira-amount">
-                      {country.currency} {teaser.minAmount.toLocaleString()}
+                    <p className="overflow-wrap-anywhere text-[clamp(1.05rem,5vw,1.25rem)] font-bold naira-amount">
+                      {isVariableRequirement
+                        ? "Variable"
+                        : `${country.currencyCode} ${teaser.minAmount.toLocaleString()}`}
                     </p>
                   </CardContent>
                 </Card>
@@ -498,11 +613,12 @@ export default function CalculatorPage() {
                     <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">
                       Indicative rate
                     </p>
-                    <p className="text-lg font-bold naira-amount">
+                    <p className="overflow-wrap-anywhere text-[clamp(1.05rem,5vw,1.25rem)] font-bold naira-amount">
                       ₦{fx.parallelRate.toLocaleString()}
                     </p>
                     <p className="mt-1 text-[11px] text-muted-foreground">
-                      Stored {new Date(fx.lastUpdated).toLocaleDateString("en-NG")}
+                      Stored{" "}
+                      {new Date(fx.lastUpdated).toLocaleDateString("en-NG")}
                     </p>
                   </CardContent>
                 </Card>
@@ -511,8 +627,10 @@ export default function CalculatorPage() {
                     <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">
                       Estimated base target
                     </p>
-                    <p className="text-lg font-bold naira-amount text-yellow-700 dark:text-yellow-400">
-                      {formatNaira(nairaTarget)}
+                    <p className="overflow-wrap-anywhere text-[clamp(1.05rem,5vw,1.25rem)] font-bold naira-amount text-yellow-700 dark:text-yellow-400">
+                      {isVariableRequirement
+                        ? "Confirm inputs"
+                        : formatNaira(nairaTarget)}
                     </p>
                   </CardContent>
                 </Card>
@@ -524,8 +642,8 @@ export default function CalculatorPage() {
                   <AlertTriangle className="w-5 h-5 text-primary shrink-0 mt-0.5" />
                   <p className="text-sm text-muted-foreground leading-relaxed">
                     <strong className="text-foreground">
-                      {country.flag} {country.name} —{" "}
-                      {PURPOSES.find((p) => p.id === selectedPurpose)?.name}{" "}
+                      {country.flagEmoji} {country.name} -{" "}
+                      {selectedPurposeRecord?.name}{" "}
                       Visa:
                     </strong>{" "}
                     {teaser.teaserNote}
@@ -654,7 +772,7 @@ export default function CalculatorPage() {
 
               {/* Gate — Sign up CTA or Save button */}
               <Card className="border-primary/30 bg-gradient-to-br from-primary/5 via-background to-background shadow-sm">
-                <CardContent className="p-8 text-center space-y-4">
+                <CardContent className="space-y-4 p-5 text-center sm:p-7">
                   <div className="flex justify-center gap-3 mb-2">
                     <TrendingUp className="w-6 h-6 text-primary" />
                     <Shield className="w-6 h-6 text-primary" />
@@ -664,11 +782,11 @@ export default function CalculatorPage() {
                   {isAuthenticated ? (
                     // ── LOGGED IN — Show save button ──
                     <>
-                      <h3 className="text-xl font-bold text-background">
+                      <h3 className="text-xl font-bold text-foreground">
                         Save this strategy
                       </h3>
 
-                      <p className="text-background/60 text-sm max-w-md mx-auto">
+                      <p className="mx-auto max-w-md text-sm text-muted-foreground">
                         Continue where you left off. Your dashboard includes
                         your preparation timeline, Funding Pace Planner, and
                         source-linked rule references.
@@ -682,15 +800,12 @@ export default function CalculatorPage() {
 
                           <div className="grid gap-1 text-sm text-muted-foreground">
                             <p>
-                              🌍 {country?.flag} {country?.name}
+                              {country?.flagEmoji} {country?.name}
                             </p>
 
                             <p>
-                              🎯{" "}
-                              {
-                                PURPOSES.find((p) => p.id === selectedPurpose)
-                                  ?.name
-                              }
+                              {selectedPurposeRecord?.icon}{" "}
+                              {selectedPurposeRecord?.name}
                             </p>
 
                             <p>
@@ -698,11 +813,16 @@ export default function CalculatorPage() {
                               {intakeDate.getFullYear()}
                             </p>
 
-                            <p>💰 Target: {formatNaira(nairaTarget)}</p>
+                            <p>
+                              Target:{" "}
+                              {isVariableRequirement
+                                ? "Variable requirement"
+                                : formatNaira(nairaTarget)}
+                            </p>
                           </div>
                         </div>
 
-                        <label className="text-sm font-medium text-background/80">
+                        <label className="text-sm font-medium text-foreground">
                           Current Account Balance (₦)
                         </label>
 
@@ -719,7 +839,7 @@ export default function CalculatorPage() {
                               setSaveError("");
                             }
                           }}
-                          className="w-full rounded-lg border border-background/20 bg-background/10 px-4 py-3 text-background placeholder:text-background/40 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
+                          className="w-full rounded-lg border border-input bg-background px-4 py-3 text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
                         />
 
                         {saveError && (
@@ -732,6 +852,7 @@ export default function CalculatorPage() {
                           size="lg"
                           onClick={handleSave}
                           disabled={
+                            isVariableRequirement ||
                             saveState === "saving" ||
                             currentBalance.trim() === ""
                           }
@@ -748,7 +869,9 @@ export default function CalculatorPage() {
                             </>
                           ) : (
                             <>
-                              Save Strategy
+                              {isVariableRequirement
+                                ? "Fixed Target Unavailable"
+                                : "Save Strategy"}
                               <ArrowRight className="ml-2 h-4 w-4" />
                             </>
                           )}
@@ -764,14 +887,21 @@ export default function CalculatorPage() {
                           </Button>
                         )}
                       </div>
+                      {isVariableRequirement ? (
+                        <p className="text-xs text-muted-foreground">
+                          This route is supported as official guidance, but it
+                          needs route-specific inputs before it can be saved as
+                          a fixed funding plan.
+                        </p>
+                      ) : null}
                     </>
                   ) : (
                     // ── NOT LOGGED IN — Show signup gate ──
                     <>
-                      <h3 className="text-xl font-bold text-background">
+                      <h3 className="text-xl font-bold text-foreground">
                         Your full POF strategy is ready
                       </h3>
-                      <p className="text-background/60 text-sm max-w-md mx-auto">
+                      <p className="mx-auto max-w-md text-sm text-muted-foreground">
                         Create a free account to unlock your complete 12-month
                         calendar, Funding Pace Planner, monthly funding
                         estimate, and source-linked rule references.
@@ -780,14 +910,14 @@ export default function CalculatorPage() {
                         <Button
                           onClick={() => router.push("/signin")}
                           size="lg"
-                          className="text-base"
+                          className="max-w-full text-base"
                         >
-                          Unlock Full Strategy — Free
+                          Unlock Strategy
                           <ArrowRight className="w-4 h-4 ml-2" />
                         </Button>
                       </div>
-                      <p className="text-xs text-background/40">
-                        No credit card. No spam. Sign in to save your strategy.
+                      <p className="text-xs text-muted-foreground">
+                        Free to use. No credit card required.
                       </p>
                     </>
                   )}

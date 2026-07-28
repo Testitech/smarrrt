@@ -64,31 +64,33 @@ function MonthRow({
   const isComplete = runningBalance >= target;
 
   return (
-    <div className="flex items-center gap-3 py-2.5 border-b border-border last:border-0">
+    <div className="grid min-w-0 gap-3 py-3 border-b border-border last:border-0 sm:grid-cols-[2rem_2.5rem_8rem_1fr_auto] sm:items-center">
       {/* Month number */}
-      <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
+      <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted">
         <span className="text-xs font-bold text-muted-foreground">
           {index + 1}
         </span>
       </div>
 
       {/* Month name */}
-      <div className="w-10 shrink-0">
+      <div className="min-w-0">
         <p className="text-sm font-semibold">{month}</p>
       </div>
 
       {/* Deposit */}
-      <div className="shrink-0 w-32">
+      <div className="min-w-0">
         <p className="text-xs text-muted-foreground">Contribution</p>
-        <p className="text-sm font-mono font-semibold text-foreground">
+        <p className="overflow-wrap-anywhere text-sm font-semibold tabular-nums text-foreground">
           {formatNaira(deposit)}
         </p>
       </div>
 
       {/* Progress bar */}
-      <div className="flex-1 space-y-1">
-        <div className="flex justify-between text-xs text-muted-foreground">
-          <span>{formatNaira(runningBalance)}</span>
+      <div className="min-w-0 space-y-1 sm:col-auto">
+        <div className="flex min-w-0 justify-between gap-3 text-xs text-muted-foreground">
+          <span className="overflow-wrap-anywhere tabular-nums">
+            {formatNaira(runningBalance)}
+          </span>
           <span>{progress.toFixed(0)}%</span>
         </div>
         <div className="h-2 bg-muted rounded-full overflow-hidden">
@@ -107,7 +109,7 @@ function MonthRow({
 
       {/* Complete indicator */}
       {isComplete && (
-        <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+        <CheckCircle className="size-4 text-green-500 sm:justify-self-end" />
       )}
     </div>
   );
@@ -202,7 +204,7 @@ export default function StatementAnalyzer({
                   Planning Target
                 </p>
 
-                <h3 className="text-3xl font-bold tracking-tight mt-2 naira-amount">
+                <h3 className="mt-2 overflow-wrap-anywhere text-[clamp(1.4rem,6vw,1.875rem)] font-bold tracking-normal naira-amount">
                   {formatNaira(recommendedNairaTarget)}
                 </h3>
               </div>
@@ -245,7 +247,7 @@ export default function StatementAnalyzer({
                   Suggested Monthly Contribution
                 </p>
 
-                <h3 className="text-3xl font-bold tracking-tight mt-2 text-primary naira-amount">
+                <h3 className="mt-2 overflow-wrap-anywhere text-[clamp(1.4rem,6vw,1.875rem)] font-bold tracking-normal text-primary naira-amount">
                   {formatNaira(analysis.monthlyDeposit)}
                 </h3>
               </div>
@@ -422,7 +424,7 @@ export default function StatementAnalyzer({
               </div>
 
               <div className="rounded-xl border border-primary/20 bg-primary/10 px-3 py-2">
-                <span className="text-sm font-bold text-primary naira-amount">
+                <span className="overflow-wrap-anywhere text-sm font-bold text-primary naira-amount">
                   {formatNaira(adjustedBalance)}
                 </span>
               </div>
@@ -496,7 +498,7 @@ export default function StatementAnalyzer({
                 Total Deficit
               </p>
 
-              <p className="text-sm font-bold text-primary naira-amount">
+              <p className="overflow-wrap-anywhere text-sm font-bold text-primary naira-amount">
                 {formatNaira(analysis.deficit)}
               </p>
             </div>

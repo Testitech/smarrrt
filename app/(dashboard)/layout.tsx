@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, LogOut } from "lucide-react";
 import { SidebarNav } from "@/components/dashboard/sidebar-nav";
 import { MobileNav } from "@/components/dashboard/mobile-nav";
+import { SmarrrtLogo } from "@/components/shared/smarrrt-logo";
 
 export default async function DashboardLayout({
   children,
@@ -43,27 +44,7 @@ export default async function DashboardLayout({
       >
         {/* Logo */}
         <div className="px-6 py-7 border-b border-border">
-          <Link
-            href="/dashboard"
-            aria-label="Smarrrt dashboard"
-            className="flex items-center gap-3 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4"
-          >
-            <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-primary shadow-sm">
-              <span className="text-primary-foreground font-bold text-lg">
-                Sm
-              </span>
-            </div>
-
-            <div>
-              <p className="font-heading text-2xl tracking-tight">
-                Sma<span className="text-primary">rrr</span>t
-              </p>
-
-              <p className="text-sm text-muted-foreground">
-                Visa POF Planning
-              </p>
-            </div>
-          </Link>
+          <SmarrrtLogo href="/dashboard" variant="large" />
         </div>
 
         {/* User */}
@@ -138,19 +119,7 @@ export default async function DashboardLayout({
       {/* ───────────────── MOBILE TOPBAR ───────────────── */}
       <header className="lg:hidden sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur">
         <div className="flex h-16 items-center justify-between px-4">
-          <Link
-            href="/dashboard"
-            aria-label="Smarrrt dashboard"
-            className="flex items-center gap-2 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-          >
-            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-primary">
-              <span className="text-primary-foreground font-bold">Sm</span>
-            </div>
-
-            <span className="font-heading text-xl tracking-tight">
-              Sma<span className="text-primary">rrr</span>t
-            </span>
-          </Link>
+          <SmarrrtLogo href="/dashboard" variant="header" />
 
           <Link
             href="/dashboard/settings"

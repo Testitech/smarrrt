@@ -47,7 +47,7 @@ const FEATURES = [
     icon: Calendar,
     title: "Source-Reviewed Timelines",
     description:
-      "Choose a supported study destination and intake date to compare your runway with practical planning windows linked to official rule sources.",
+      "Choose a supported destination, purpose and intake date to compare your runway with practical planning windows linked to official rule sources.",
   },
   {
     icon: TrendingUp,
@@ -76,7 +76,7 @@ const STEPS = [
     step: "01",
     title: "Select your destination",
     description:
-      "Choose a supported destination and study route from our source-reviewed rule set.",
+      "Choose a supported destination and purpose from our source-reviewed rule set.",
   },
   {
     step: "02",
@@ -110,13 +110,13 @@ export default function LandingPage() {
       <div className="flex flex-col">
         {/* ── HERO ── */}
         <section className="relative overflow-hidden bg-background">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 md:py-32">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
             <div className="max-w-4xl mx-auto text-center">
               <Badge className="mb-6 bg-primary/10 text-primary border-primary/20 hover:bg-primary/10">
                 Built for Nigerian travel aspirants
               </Badge>
 
-              <h1 className="text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold tracking-tight text-balance mb-6">
+              <h1 className="text-4xl font-extrabold leading-[1.02] tracking-normal text-balance mb-5 sm:text-5xl md:text-6xl lg:text-7xl">
                 Stop Guessing Your{" "}
                 <span className="text-primary">Proof of Funds.</span> Start
                 Planning with Reality.
@@ -127,10 +127,10 @@ export default function LandingPage() {
                 rates into a practical Naira estimate, then map a preparation
                 timeline you can revisit as your plans change.
               </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <div className="mx-auto flex max-w-md flex-col gap-3 sm:max-w-none sm:flex-row sm:justify-center">
                 <Button asChild size="lg" className="text-base">
                   <Link href="/calculator">
-                    Calculate My POF Timeline — It&apos;s Free
+                    Start My POF Plan
                     <ArrowRight className="ml-2 w-5 h-5" />
                   </Link>
                 </Button>
@@ -145,11 +145,12 @@ export default function LandingPage() {
               </div>
 
               {/* Trust signals */}
-              <div className="mt-10 flex flex-wrap justify-center gap-6">
+              <div className="mt-7 flex flex-wrap justify-center gap-x-5 gap-y-2">
                 {[
+                  "✓ Free to use",
                   "✓ No credit card required",
                   "✓ Source-linked rule references",
-                  "✓ 5 study destinations supported",
+                  "✓ Multiple purposes supported",
                 ].map((signal) => (
                   <span
                     key={signal}
@@ -303,7 +304,7 @@ export default function LandingPage() {
                 Supported Countries
               </Badge>
               <h2 className="text-4xl md:text-5xl xl:text-6xl font-bold mb-6 leading-tight text-balance">
-                5 study destinations. Source-linked planning.
+                Supported destinations. Source-linked planning.
               </h2>
               <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed text-balance">
                 Each active reference is reviewed against an official source.
@@ -367,9 +368,9 @@ export default function LandingPage() {
               Build your financial strategy from source-reviewed references,
               indicative Naira estimates, and a timeline you can act on.
             </p>
-            <Button asChild size="lg" className="text-lg px-8 py-7 rounded-xl">
+            <Button asChild size="lg" className="mt-8 max-w-full text-base">
               <Link href="/calculator">
-                Generate My Custom Timeline
+                Generate Timeline
                 <ArrowRight className="ml-2 w-5 h-5" />
               </Link>
             </Button>

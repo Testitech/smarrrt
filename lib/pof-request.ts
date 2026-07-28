@@ -243,7 +243,7 @@ export async function calculatePofRequest(input: PofRequestInput) {
 
   if (!rule) {
     throw new PofRequestError(
-      "No POF rule is available for this country and visa purpose.",
+      "No active POF rule is currently available for this country and visa purpose.",
       404,
     );
   }

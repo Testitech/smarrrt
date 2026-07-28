@@ -4,7 +4,9 @@ import { Pool } from "pg";
 import { createId } from "@paralleldrive/cuid2";
 import "dotenv/config";
 
-const CONNECTION_TIMEOUT_MS = 10_000;
+const CONNECTION_TIMEOUT_MS = 20_000;
+const CONNECTION_ATTEMPTS = 3;
+const CONNECTION_RETRY_DELAY_MS = 1_000;
 
 function getDirectDatabaseUrl() {
   const value =
@@ -104,6 +106,7 @@ async function upsertPofRule({ where, create, metadata }: PofRuleSeed) {
 }
 
 const SOURCE_CHECKED_AT = new Date("2026-07-22T00:00:00.000Z");
+const ADDITIONAL_SOURCE_CHECKED_AT = new Date("2026-07-27T00:00:00.000Z");
 
 const RULE_METADATA = {
   GB_STUDY: {
@@ -118,7 +121,7 @@ const RULE_METADATA = {
     effectiveTo: null,
   },
   GB_VISIT: {
-    isActive: false,
+    isActive: true,
     ruleVersion: "2026-07-gb-visit-variable",
     holdingPeriodDays: null,
     documentMaxAgeDays: null,
@@ -126,6 +129,30 @@ const RULE_METADATA = {
     sourceUrl:
       "https://www.gov.uk/guidance/immigration-rules/immigration-rules-appendix-v-visitor",
     sourceCheckedAt: SOURCE_CHECKED_AT,
+    effectiveFrom: null,
+    effectiveTo: null,
+  },
+  GB_BUSINESS: {
+    isActive: true,
+    ruleVersion: "2026-07-gb-business-visitor-variable",
+    holdingPeriodDays: null,
+    documentMaxAgeDays: null,
+    amountScope: "VARIABLE_REQUIREMENT",
+    sourceUrl:
+      "https://www.gov.uk/guidance/immigration-rules/immigration-rules-appendix-v-visitor",
+    sourceCheckedAt: ADDITIONAL_SOURCE_CHECKED_AT,
+    effectiveFrom: null,
+    effectiveTo: null,
+  },
+  GB_WORK: {
+    isActive: true,
+    ruleVersion: "2026-07-gb-skilled-worker-maintenance",
+    holdingPeriodDays: 28,
+    documentMaxAgeDays: 31,
+    amountScope: "VARIABLE_REQUIREMENT",
+    sourceUrl:
+      "https://www.gov.uk/guidance/immigration-rules/immigration-rules-appendix-skilled-worker",
+    sourceCheckedAt: ADDITIONAL_SOURCE_CHECKED_AT,
     effectiveFrom: null,
     effectiveTo: null,
   },
@@ -141,6 +168,29 @@ const RULE_METADATA = {
     effectiveFrom: null,
     effectiveTo: null,
   },
+  US_VISIT: {
+    isActive: true,
+    ruleVersion: "2026-07-us-b2-visitor-variable",
+    holdingPeriodDays: null,
+    documentMaxAgeDays: null,
+    amountScope: "VARIABLE_REQUIREMENT",
+    sourceUrl:
+      "https://travel.state.gov/content/travel/en/us-visas/tourism-visit/visitor.html",
+    sourceCheckedAt: ADDITIONAL_SOURCE_CHECKED_AT,
+    effectiveFrom: null,
+    effectiveTo: null,
+  },
+  US_BUSINESS: {
+    isActive: true,
+    ruleVersion: "2026-07-us-b1-business-variable",
+    holdingPeriodDays: null,
+    documentMaxAgeDays: null,
+    amountScope: "VARIABLE_REQUIREMENT",
+    sourceUrl: "https://travel.state.gov/content/travel/en/us-visas/business.html",
+    sourceCheckedAt: ADDITIONAL_SOURCE_CHECKED_AT,
+    effectiveFrom: null,
+    effectiveTo: null,
+  },
   CA_STUDY: {
     isActive: true,
     ruleVersion: "2026-07-ca-study-base",
@@ -153,6 +203,30 @@ const RULE_METADATA = {
     effectiveFrom: new Date("2025-09-01T00:00:00.000Z"),
     effectiveTo: null,
   },
+  CA_WORK: {
+    isActive: true,
+    ruleVersion: "2026-07-ca-work-permit-variable",
+    holdingPeriodDays: null,
+    documentMaxAgeDays: null,
+    amountScope: "VARIABLE_REQUIREMENT",
+    sourceUrl:
+      "https://www.canada.ca/en/immigration-refugees-citizenship/services/work-canada/permit-outside/eligibility.html",
+    sourceCheckedAt: ADDITIONAL_SOURCE_CHECKED_AT,
+    effectiveFrom: null,
+    effectiveTo: null,
+  },
+  CA_VISIT: {
+    isActive: true,
+    ruleVersion: "2026-07-ca-visitor-variable",
+    holdingPeriodDays: null,
+    documentMaxAgeDays: null,
+    amountScope: "VARIABLE_REQUIREMENT",
+    sourceUrl:
+      "https://www.canada.ca/en/immigration-refugees-citizenship/services/visit-canada/eligibility.html",
+    sourceCheckedAt: ADDITIONAL_SOURCE_CHECKED_AT,
+    effectiveFrom: null,
+    effectiveTo: null,
+  },
   AU_STUDY: {
     isActive: true,
     ruleVersion: "2026-07-au-study-base",
@@ -162,6 +236,30 @@ const RULE_METADATA = {
     sourceUrl:
       "https://immi.homeaffairs.gov.au/Visa-subsite/Pages/student/500-student.aspx",
     sourceCheckedAt: SOURCE_CHECKED_AT,
+    effectiveFrom: null,
+    effectiveTo: null,
+  },
+  AU_VISIT: {
+    isActive: true,
+    ruleVersion: "2026-07-au-visitor-600-variable",
+    holdingPeriodDays: null,
+    documentMaxAgeDays: null,
+    amountScope: "VARIABLE_REQUIREMENT",
+    sourceUrl:
+      "https://immi.homeaffairs.gov.au/visas/getting-a-visa/visa-listing/visitor-600/tourist-stream-overseas",
+    sourceCheckedAt: ADDITIONAL_SOURCE_CHECKED_AT,
+    effectiveFrom: null,
+    effectiveTo: null,
+  },
+  AU_BUSINESS: {
+    isActive: true,
+    ruleVersion: "2026-07-au-business-visitor-600-variable",
+    holdingPeriodDays: null,
+    documentMaxAgeDays: null,
+    amountScope: "VARIABLE_REQUIREMENT",
+    sourceUrl:
+      "https://immi.homeaffairs.gov.au/visas/getting-a-visa/visa-listing/visitor-600/business-visitor-stream",
+    sourceCheckedAt: ADDITIONAL_SOURCE_CHECKED_AT,
     effectiveFrom: null,
     effectiveTo: null,
   },
@@ -236,24 +334,42 @@ const RULE_METADATA = {
 } as const;
 
 async function verifyDatabaseConnection() {
-  try {
-    const result = await pool.query<{ connected: number }>(
-      "SELECT 1 AS connected",
-    );
+  let lastError: unknown;
 
-    if (result.rows[0]?.connected !== 1) {
-      throw new Error("The database returned an unexpected health-check result.");
+  for (let attempt = 1; attempt <= CONNECTION_ATTEMPTS; attempt += 1) {
+    try {
+      const result = await pool.query<{ connected: number }>(
+        "SELECT 1 AS connected",
+      );
+
+      if (result.rows[0]?.connected !== 1) {
+        throw new Error(
+          "The database returned an unexpected health-check result.",
+        );
+      }
+
+      console.log("✅ Database connection verified");
+      return;
+    } catch (error) {
+      lastError = error;
+
+      if (attempt < CONNECTION_ATTEMPTS) {
+        console.warn(
+          `Database connection attempt ${attempt} failed; retrying...`,
+        );
+        await new Promise((resolve) =>
+          setTimeout(resolve, CONNECTION_RETRY_DELAY_MS * attempt),
+        );
+      }
     }
-
-    console.log("✅ Database connection verified");
-  } catch (error) {
-    const detail = error instanceof Error ? ` ${error.message}` : "";
-
-    throw new Error(
-      `Database connection check failed (timeout: ${CONNECTION_TIMEOUT_MS}ms). Verify that DATABASE_URL is a reachable direct PostgreSQL URL.${detail}`,
-      { cause: error },
-    );
   }
+
+  const detail = lastError instanceof Error ? ` ${lastError.message}` : "";
+
+  throw new Error(
+    `Database connection check failed after ${CONNECTION_ATTEMPTS} attempts (timeout: ${CONNECTION_TIMEOUT_MS}ms each). Verify that DIRECT_URL or DATABASE_URL is a reachable direct PostgreSQL URL.${detail}`,
+    { cause: lastError },
+  );
 }
 
 async function main() {
@@ -963,6 +1079,110 @@ async function main() {
     },
   });
 
+  // ── UK BUSINESS VISITOR ──
+  await upsertPofRule({
+    metadata: RULE_METADATA.GB_BUSINESS,
+    where: {
+      countryId_purposeId: {
+        countryId: getCountry("GB").id,
+        purposeId: getPurpose("business").id,
+      },
+    },
+    create: {
+      id: createId(),
+      countryId: getCountry("GB").id,
+      purposeId: getPurpose("business").id,
+      safeBufferMonths: 3,
+      cautionBufferMonths: 2,
+      riskyBufferMonths: 1,
+      minAmountForeign: 0,
+      requiresHistory: true,
+      statementMonths: null,
+      analysisText:
+        "The UK business visitor route sits under Standard Visitor rules and has no single official minimum funds amount. The required evidence depends on the trip length, accommodation, sponsor support, business activity and applicant circumstances.",
+      nigerianSpecific:
+        "Prepare a clear trip budget, employer or host invitation, evidence of who pays each cost, and bank records that explain material credits. This is supported as variable guidance only, not as a fixed Naira target.",
+    },
+  });
+
+  // ── UK WORK ──
+  await upsertPofRule({
+    metadata: RULE_METADATA.GB_WORK,
+    where: {
+      countryId_purposeId: {
+        countryId: getCountry("GB").id,
+        purposeId: getPurpose("work").id,
+      },
+    },
+    create: {
+      id: createId(),
+      countryId: getCountry("GB").id,
+      purposeId: getPurpose("work").id,
+      safeBufferMonths: 4,
+      cautionBufferMonths: 2,
+      riskyBufferMonths: 1,
+      minAmountForeign: 1270,
+      requiresHistory: true,
+      statementMonths: null,
+      analysisText:
+        "UK Skilled Worker maintenance is usually {{minAmountForeign}} {{currencyCode}}, held for 28 days, unless the sponsor certifies maintenance or another exemption applies. Because sponsor certification can change the required applicant-held amount, this route is marked variable.",
+      nigerianSpecific:
+        "Check the Certificate of Sponsorship for maintenance certification before funding the account. If relying on personal funds, keep the 28-day balance clean and make sure day 28 is within the official evidence window.",
+    },
+  });
+
+  // ── USA VISIT ──
+  await upsertPofRule({
+    metadata: RULE_METADATA.US_VISIT,
+    where: {
+      countryId_purposeId: {
+        countryId: getCountry("US").id,
+        purposeId: getPurpose("visit").id,
+      },
+    },
+    create: {
+      id: createId(),
+      countryId: getCountry("US").id,
+      purposeId: getPurpose("visit").id,
+      safeBufferMonths: 3,
+      cautionBufferMonths: 2,
+      riskyBufferMonths: 1,
+      minAmountForeign: 0,
+      requiresHistory: true,
+      statementMonths: null,
+      analysisText:
+        "US B-2 visitor funding is assessed against the applicant's stated trip and circumstances. There is no universal fixed proof-of-funds minimum in the public State Department visitor guidance.",
+      nigerianSpecific:
+        "Use a realistic itinerary, explain who pays for the trip, and keep bank evidence consistent with your income, ties and travel purpose. Smarrrt does not convert this into a fixed Naira target.",
+    },
+  });
+
+  // ── USA BUSINESS ──
+  await upsertPofRule({
+    metadata: RULE_METADATA.US_BUSINESS,
+    where: {
+      countryId_purposeId: {
+        countryId: getCountry("US").id,
+        purposeId: getPurpose("business").id,
+      },
+    },
+    create: {
+      id: createId(),
+      countryId: getCountry("US").id,
+      purposeId: getPurpose("business").id,
+      safeBufferMonths: 3,
+      cautionBufferMonths: 2,
+      riskyBufferMonths: 1,
+      minAmountForeign: 0,
+      requiresHistory: true,
+      statementMonths: null,
+      analysisText:
+        "US B-1 business travel covers temporary business activities such as meetings, conferences and negotiations. Public guidance does not publish a single fixed funds amount; affordability depends on the activity, duration and support arrangements.",
+      nigerianSpecific:
+        "Keep invitation letters, conference registration, employer letters and bank evidence aligned. Avoid treating incidental reimbursements or host support as a replacement for a coherent applicant funding story.",
+    },
+  });
+
   // ── USA STUDY ──
   await upsertPofRule({
     metadata: RULE_METADATA.US_STUDY,
@@ -1015,6 +1235,58 @@ async function main() {
     },
   });
 
+  // ── CANADA WORK ──
+  await upsertPofRule({
+    metadata: RULE_METADATA.CA_WORK,
+    where: {
+      countryId_purposeId: {
+        countryId: getCountry("CA").id,
+        purposeId: getPurpose("work").id,
+      },
+    },
+    create: {
+      id: createId(),
+      countryId: getCountry("CA").id,
+      purposeId: getPurpose("work").id,
+      safeBufferMonths: 4,
+      cautionBufferMonths: 2,
+      riskyBufferMonths: 1,
+      minAmountForeign: 0,
+      requiresHistory: true,
+      statementMonths: null,
+      analysisText:
+        "Canada's general outside-Canada work-permit guidance requires enough money to support the applicant and family during the stay and to return home, but it does not publish one fixed amount for all work permits.",
+      nigerianSpecific:
+        "Build a route-specific budget around job location, first pay date, accommodation, dependants and return travel. Keep documents that show accessible funds and explain major deposits.",
+    },
+  });
+
+  // ── CANADA VISIT ──
+  await upsertPofRule({
+    metadata: RULE_METADATA.CA_VISIT,
+    where: {
+      countryId_purposeId: {
+        countryId: getCountry("CA").id,
+        purposeId: getPurpose("visit").id,
+      },
+    },
+    create: {
+      id: createId(),
+      countryId: getCountry("CA").id,
+      purposeId: getPurpose("visit").id,
+      safeBufferMonths: 3,
+      cautionBufferMonths: 2,
+      riskyBufferMonths: 1,
+      minAmountForeign: 0,
+      requiresHistory: true,
+      statementMonths: 6,
+      analysisText:
+        "Canada visitor guidance says the amount needed depends on stay length and whether the applicant stays in a hotel or with friends or relatives. There is no single official minimum for every visitor.",
+      nigerianSpecific:
+        "Prepare six months of account history where requested, a clear visit budget, accommodation evidence and sponsor/host support documents if someone else is paying.",
+    },
+  });
+
   // ── AUSTRALIA STUDY ──
   await upsertPofRule({
     metadata: RULE_METADATA.AU_STUDY,
@@ -1038,6 +1310,58 @@ async function main() {
         "The {{minAmountForeign}} {{currencyCode}} figure is the one-student annual living-cost component. A complete capacity assessment also includes travel, course fees and any family or school costs. The Naira estimate for this component is {{nairaTarget}}.",
       nigerianSpecific:
         "Use evidence that the funds are genuinely available and explain their source where requested. Check the current Genuine Student requirement and document checklist before applying.",
+    },
+  });
+
+  // ── AUSTRALIA VISIT ──
+  await upsertPofRule({
+    metadata: RULE_METADATA.AU_VISIT,
+    where: {
+      countryId_purposeId: {
+        countryId: getCountry("AU").id,
+        purposeId: getPurpose("visit").id,
+      },
+    },
+    create: {
+      id: createId(),
+      countryId: getCountry("AU").id,
+      purposeId: getPurpose("visit").id,
+      safeBufferMonths: 3,
+      cautionBufferMonths: 2,
+      riskyBufferMonths: 1,
+      minAmountForeign: 0,
+      requiresHistory: true,
+      statementMonths: 3,
+      analysisText:
+        "Australia Visitor visa financial evidence is trip-specific. The official checklist asks for proof the applicant has enough money for the stay and to leave Australia, such as itemised bank statements, but no universal fixed minimum is published.",
+      nigerianSpecific:
+        "Use a realistic trip budget, three-month itemised statements where applicable, employment or business evidence, and clear support documents if a host or company pays costs.",
+    },
+  });
+
+  // ── AUSTRALIA BUSINESS VISITOR ──
+  await upsertPofRule({
+    metadata: RULE_METADATA.AU_BUSINESS,
+    where: {
+      countryId_purposeId: {
+        countryId: getCountry("AU").id,
+        purposeId: getPurpose("business").id,
+      },
+    },
+    create: {
+      id: createId(),
+      countryId: getCountry("AU").id,
+      purposeId: getPurpose("business").id,
+      safeBufferMonths: 3,
+      cautionBufferMonths: 2,
+      riskyBufferMonths: 1,
+      minAmountForeign: 0,
+      requiresHistory: true,
+      statementMonths: 3,
+      analysisText:
+        "Australia's Business Visitor stream requires enough money, or access to enough money, to support the applicant while in Australia. The amount depends on the business activity, stay length, accommodation and support arrangements.",
+      nigerianSpecific:
+        "Align the invitation, employer letter, conference or trade documents, bank statements and company evidence. Treat Smarrrt's timeline as preparation guidance, not a fixed official threshold.",
     },
   });
 

@@ -8,6 +8,7 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import Link from "next/link";
+import { SmarrrtLogo } from "@/components/shared/smarrrt-logo";
 
 function authErrorMessage(error: string | string[] | undefined) {
   const code = Array.isArray(error) ? error[0] : error;
@@ -39,16 +40,7 @@ export default async function SignInPage({
       <div className="w-full max-w-xl">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2 mb-4">
-            <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-primary shadow-sm">
-              <span className="text-primary-foreground font-black text-lg">
-                Sm
-              </span>
-            </div>
-            <span className="font-black text-4xl tracking-tight">
-              Sma<span className="text-primary">rrr</span>t
-            </span>
-          </div>
+          <SmarrrtLogo href="/" variant="large" className="mb-4" />
           <p className="text-base text-muted-foreground">
             Your visa POF strategy dashboard
           </p>

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SmarrrtLogo } from "@/components/shared/smarrrt-logo";
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
@@ -10,20 +11,9 @@ export default function Footer() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-14">
           {/* Brand Section */}
           <div className="lg:col-span-5">
-            <Link
-              href="/"
-              className="inline-flex items-center gap-3 group mb-6"
-            >
-              <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-primary shadow-sm">
-                <span className="text-primary-foreground font-bold text-lg">
-                  Sm
-                </span>
-              </div>
-
-              <span className="font-heading text-3xl tracking-tight font-bold font-black">
-                Sma<span className="text-primary">rrr</span>t
-              </span>
-            </Link>
+            <div className="mb-6">
+              <SmarrrtLogo href="/" variant="footer" />
+            </div>
 
             <p className="text-base md:text-lg text-muted-foreground leading-relaxed max-w-md">
               Smarrrt helps Nigerian visa applicants plan their Proof of Funds

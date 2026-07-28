@@ -69,6 +69,14 @@ export async function POST(request: Request) {
     const input = await readPofRequest(request);
     const { country, purpose, rule, fxRate, calculation } =
       await calculatePofRequest(input);
+
+    if (rule.amountScope === "VARIABLE_REQUIREMENT") {
+      throw new PofRequestError(
+        "This route needs applicant-specific financial inputs before it can be saved as a fixed strategy.",
+        422,
+      );
+    }
+
     const calculatedAt = new Date();
     const compoundKey = {
       userId: session.user.id,

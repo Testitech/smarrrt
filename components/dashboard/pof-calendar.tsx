@@ -93,18 +93,9 @@ function MonthCard({
       {/* glow */}
       <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-br from-primary/5 to-transparent pointer-events-none" />
 
-      {/* current month */}
-      {isCurrentMonth && (
-        <div className="absolute top-3 right-3">
-          <span className="rounded-full bg-primary px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-primary-foreground shadow-sm">
-            Current
-          </span>
-        </div>
-      )}
-
       {/* top */}
-      <div className="flex items-start justify-between mb-4">
-        <div>
+      <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
           <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground font-semibold">
             {month.monthName.slice(0, 3)}
           </p>
@@ -114,16 +105,21 @@ function MonthCard({
           </h3>
         </div>
 
-        <div
-          className={`
-            flex items-center justify-center
-            w-9 h-9 rounded-xl
-            border
-            ${config.borderColor}
-            bg-background/70 backdrop-blur-sm
-          `}
-        >
-          <Icon className={`w-4 h-4 ${config.textColor}`} />
+        <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+          {isCurrentMonth && (
+            <span className="inline-flex h-7 items-center rounded-full bg-primary px-2.5 text-[10px] font-bold uppercase tracking-wide text-primary-foreground shadow-sm">
+              Current
+            </span>
+          )}
+          <div
+            className={`
+              flex size-9 items-center justify-center rounded-xl border
+              ${config.borderColor}
+              bg-background/70 backdrop-blur-sm
+            `}
+          >
+            <Icon className={`w-4 h-4 ${config.textColor}`} />
+          </div>
         </div>
       </div>
 
@@ -217,9 +213,9 @@ export default function PofCalendar({ monthlyBreakdown }: PofCalendarProps) {
       <div className="rounded-2xl border border-border/60 bg-background/70 backdrop-blur-sm p-5 shadow-sm">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
           {/* stats */}
-          <div className="grid grid-cols-3 gap-4">
-            <div className="rounded-xl bg-green-500/10 px-5 py-4 border border-green-500/20">
-              <p className="text-4xl font-bold tracking-tight text-green-600">
+          <div className="grid grid-cols-1 gap-3 min-[360px]:grid-cols-3">
+            <div className="flex min-h-24 flex-col items-center justify-center rounded-xl border border-green-500/20 bg-green-500/10 px-3 py-4 text-center">
+              <p className="text-3xl font-bold tracking-normal text-green-600">
                 {safeCount}
               </p>
               <p className="text-xs font-medium text-green-700 dark:text-green-400 mt-1">
@@ -227,7 +223,7 @@ export default function PofCalendar({ monthlyBreakdown }: PofCalendarProps) {
               </p>
             </div>
 
-            <div className="rounded-xl bg-yellow-500/10 px-5 py-4 border border-yellow-500/20">
+            <div className="flex min-h-24 flex-col items-center justify-center rounded-xl border border-yellow-500/20 bg-yellow-500/10 px-3 py-4 text-center">
               <p className="text-3xl font-bold text-yellow-600">
                 {cautionCount}
               </p>
@@ -236,7 +232,7 @@ export default function PofCalendar({ monthlyBreakdown }: PofCalendarProps) {
               </p>
             </div>
 
-            <div className="rounded-xl bg-red-500/10 px-5 py-4 border border-red-500/20">
+            <div className="flex min-h-24 flex-col items-center justify-center rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-4 text-center">
               <p className="text-3xl font-bold text-red-600">{riskyCount}</p>
               <p className="text-xs font-medium text-red-700 dark:text-red-400 mt-1">
                 Late

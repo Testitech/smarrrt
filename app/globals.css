@@ -48,8 +48,9 @@
   --color-risky-muted: hsl(var(--risky-muted));
 
   /* Fonts */
-  --font-sans: var(--font-inter);
-  --font-heading: var(--font-space-grotesk);
+  --font-satoshi: "Satoshi", "Manrope", "General Sans", system-ui, sans-serif;
+  --font-sans: var(--font-satoshi);
+  --font-heading: var(--font-satoshi);
 
   /* Radius */
   --radius-sm: calc(var(--radius) * 0.75);
@@ -164,7 +165,7 @@
   }
 
   html {
-    font-family: var(--font-inter);
+    font-family: var(--font-satoshi);
   }
 
   body {
@@ -185,8 +186,8 @@
   h4,
   h5,
   h6 {
-    font-family: var(--font-space-grotesk);
-    @apply font-bold tracking-tight;
+    font-family: var(--font-satoshi);
+    @apply font-bold tracking-normal;
   }
 }
 
@@ -221,6 +222,11 @@
   }
 
   .naira-amount {
-    @apply font-mono font-semibold tabular-nums;
+    @apply font-semibold tabular-nums;
+  }
+
+  .overflow-wrap-anywhere {
+    overflow-wrap: anywhere;
+    word-break: normal;
   }
 }

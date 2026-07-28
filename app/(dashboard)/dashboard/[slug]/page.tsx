@@ -9,6 +9,7 @@ import PofAnalysis from "@/components/dashboard/pof-analysis";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { MetricCard } from "@/components/shared/metric-card";
 import Link from "next/link";
 import { AlertCircle, ArrowLeft } from "lucide-react";
 import type { PofStatus } from "@/types";
@@ -237,7 +238,7 @@ export default async function StrategyPage({ params }: Props) {
       </Card>
 
       {/* ── FINANCIAL SUMMARY ── */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {[
           {
             label: "Configured Rule Amount",
@@ -271,20 +272,13 @@ export default async function StrategyPage({ params }: Props) {
             sub: `Per ${timeline.country.currencyCode} · ${fxRate.isIndicative ? "indicative" : "stored"}`,
           },
         ].map((item) => (
-          <Card
+          <MetricCard
             key={item.label}
-            className="border-border/60 bg-background/70 backdrop-blur-sm shadow-sm rounded-2xl"
-          >
-            <CardContent className="p-4">
-              <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">
-                {item.label}
-              </p>
-              <p className="text-2xl tracking-tight font-bold naira-amount">
-                {item.value}
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">{item.sub}</p>
-            </CardContent>
-          </Card>
+            label={item.label}
+            value={item.value}
+            sub={item.sub}
+            className="bg-background/70 backdrop-blur-sm"
+          />
         ))}
       </div>
 
