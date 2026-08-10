@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import Navbar from "@/components/shared/navbar";
 import Footer from "@/components/shared/footer";
+import { HeroVisual } from "@/components/marketing/hero-visual";
 
 // ─────────────────────────────────────────
 // STATIC DATA
@@ -110,24 +111,24 @@ export default function LandingPage() {
       <div className="flex flex-col">
         {/* ── HERO ── */}
         <section className="relative overflow-hidden bg-background">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
-            <div className="max-w-4xl mx-auto text-center">
-              <Badge className="mb-6 bg-primary/10 text-primary border-primary/20 hover:bg-primary/10">
+          <div className="mx-auto grid max-w-7xl min-w-0 items-center gap-10 px-4 py-12 sm:px-6 sm:py-16 lg:grid-cols-[minmax(0,0.88fr)_minmax(0,1.12fr)] lg:gap-14 lg:px-8 lg:py-20">
+            <div className="min-w-0 text-center lg:text-left">
+              <Badge className="mb-5 bg-primary/10 text-primary border-primary/20 hover:bg-primary/10">
                 Built for Nigerian travel aspirants
               </Badge>
 
-              <h1 className="text-4xl font-extrabold leading-[1.02] tracking-normal text-balance mb-5 sm:text-5xl md:text-6xl lg:text-7xl">
+              <h1 className="mb-5 text-[clamp(2.45rem,10.5vw,4.5rem)] font-extrabold leading-[0.98] tracking-[-0.035em] text-balance">
                 Stop Guessing Your{" "}
-                <span className="text-primary">Proof of Funds.</span> Start
-                Planning with Reality.
+                <span className="text-primary">Proof of Funds.</span>
+                <br className="hidden sm:block" /> Start Planning Clearly.
               </h1>
 
-              <p className="text-lg md:text-xl lg:text-2xl text-muted-foreground mb-8 text-balance leading-relaxed">
+              <p className="mx-auto mb-7 max-w-2xl text-base leading-relaxed text-muted-foreground text-balance sm:text-lg lg:mx-0 lg:text-xl">
                 Turn source-reviewed requirement references and indicative FX
                 rates into a practical Naira estimate, then map a preparation
                 timeline you can revisit as your plans change.
               </p>
-              <div className="mx-auto flex max-w-md flex-col gap-3 sm:max-w-none sm:flex-row sm:justify-center">
+              <div className="mx-auto flex max-w-md flex-col gap-3 sm:max-w-none sm:flex-row sm:justify-center lg:mx-0 lg:justify-start">
                 <Button asChild size="lg" className="text-base">
                   <Link href="/calculator">
                     Start My POF Plan
@@ -145,7 +146,7 @@ export default function LandingPage() {
               </div>
 
               {/* Trust signals */}
-              <div className="mt-7 flex flex-wrap justify-center gap-x-5 gap-y-2">
+              <div className="mt-6 flex flex-wrap justify-center gap-x-4 gap-y-2 lg:justify-start">
                 {[
                   "✓ Free to use",
                   "✓ No credit card required",
@@ -161,6 +162,8 @@ export default function LandingPage() {
                 ))}
               </div>
             </div>
+
+            <HeroVisual />
           </div>
 
           {/* Background decoration */}

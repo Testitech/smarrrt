@@ -84,10 +84,7 @@ type SupportedPurpose = {
   name: string;
   slug: string;
   icon: string;
-  amountScope:
-    | "TOTAL_ESTIMATE"
-    | "LIVING_COSTS_ONLY"
-    | "VARIABLE_REQUIREMENT";
+  amountScope: "TOTAL_ESTIMATE" | "LIVING_COSTS_ONLY" | "VARIABLE_REQUIREMENT";
 };
 
 type SupportedCountry = {
@@ -643,8 +640,7 @@ export default function CalculatorPage() {
                   <p className="text-sm text-muted-foreground leading-relaxed">
                     <strong className="text-foreground">
                       {country.flagEmoji} {country.name} -{" "}
-                      {selectedPurposeRecord?.name}{" "}
-                      Visa:
+                      {selectedPurposeRecord?.name} Visa:
                     </strong>{" "}
                     {teaser.teaserNote}
                   </p>
@@ -771,7 +767,7 @@ export default function CalculatorPage() {
               )}
 
               {/* Gate — Sign up CTA or Save button */}
-              <Card className="border-primary/30 bg-gradient-to-br from-primary/5 via-background to-background shadow-sm">
+              <Card className="border-primary/30 bg-linear-to-br from-primary/5 via-background to-background shadow-sm">
                 <CardContent className="space-y-4 p-5 text-center sm:p-7">
                   <div className="flex justify-center gap-3 mb-2">
                     <TrendingUp className="w-6 h-6 text-primary" />
