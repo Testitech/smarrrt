@@ -14,6 +14,9 @@ import {
 import Navbar from "@/components/shared/navbar";
 import Footer from "@/components/shared/footer";
 import { HeroVisual } from "@/components/marketing/hero-visual";
+import { CmsCheckText, CmsLink, CmsText, LandingCms } from "@/components/marketing/landing-cms";
+import { auth } from "@/lib/auth";
+import { loadLandingContent } from "@/lib/cms/content";
 
 // ─────────────────────────────────────────
 // STATIC DATA
@@ -22,6 +25,7 @@ import { HeroVisual } from "@/components/marketing/hero-visual";
 const MYTHS = [
   {
     id: 1,
+    cmsId: "myth-canada",
     country: "🇨🇦 Canada",
     myth: "The published living-expense figure is my complete budget.",
     reality:
@@ -29,6 +33,7 @@ const MYTHS = [
   },
   {
     id: 2,
+    cmsId: "myth-australia",
     country: "🇦🇺 Australia",
     myth: "A calculator can tell me exactly what will be accepted.",
     reality:
@@ -36,6 +41,7 @@ const MYTHS = [
   },
   {
     id: 3,
+    cmsId: "myth-netherlands",
     country: "🇳🇱 Netherlands",
     myth: "Once I reach the target, the source and timing no longer matter.",
     reality:
@@ -103,37 +109,39 @@ const STEPS = [
 // PAGE
 // ─────────────────────────────────────────
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  const [session, landingContent] = await Promise.all([auth(), loadLandingContent()]);
+  const isAdmin = session?.user?.role === "ADMIN" && session.user.isActive === true;
+
   return (
     <>
       <Navbar />
 
+      <LandingCms initialItems={landingContent} isAdmin={isAdmin}>
       <div className="flex flex-col">
         {/* ── HERO ── */}
         <section className="relative overflow-hidden bg-background">
           <div className="mx-auto grid max-w-7xl min-w-0 items-center gap-10 px-4 py-12 sm:px-6 sm:py-16 lg:grid-cols-[minmax(0,0.88fr)_minmax(0,1.12fr)] lg:gap-14 lg:px-8 lg:py-20">
             <div className="min-w-0 text-center lg:text-left">
               <Badge className="mb-5 bg-primary/10 text-primary border-primary/20 hover:bg-primary/10">
-                Built for Nigerian travel aspirants
+                <CmsText itemId="hero" fieldKey="eyebrow" />
               </Badge>
 
               <h1 className="mb-5 text-[clamp(2.45rem,10.5vw,4.5rem)] font-extrabold leading-[0.98] tracking-[-0.035em] text-balance">
-                Stop Guessing Your{" "}
-                <span className="text-primary">Proof of Funds.</span>
-                <br className="hidden sm:block" /> Start Planning Clearly.
+                <CmsText itemId="hero" fieldKey="headlineBefore" />{" "}
+                <CmsText itemId="hero" fieldKey="headlineHighlight" as="span" className="text-primary" />
+                <br className="hidden sm:block" /> <CmsText itemId="hero" fieldKey="headlineAfter" />
               </h1>
 
               <p className="mx-auto mb-7 max-w-2xl text-base leading-relaxed text-muted-foreground text-balance sm:text-lg lg:mx-0 lg:text-xl">
-                Turn source-reviewed requirement references and indicative FX
-                rates into a practical Naira estimate, then map a preparation
-                timeline you can revisit as your plans change.
+                <CmsText itemId="hero" fieldKey="description" />
               </p>
               <div className="mx-auto flex max-w-md flex-col gap-3 sm:max-w-none sm:flex-row sm:justify-center lg:mx-0 lg:justify-start">
                 <Button asChild size="lg" className="text-base">
-                  <Link href="/calculator">
-                    Start My POF Plan
+                  <CmsLink itemId="hero" fieldKey="primaryCtaHref" fallbackHref="/calculator">
+                    <CmsText itemId="hero" fieldKey="primaryCtaLabel" />
                     <ArrowRight className="ml-2 w-5 h-5" />
-                  </Link>
+                  </CmsLink>
                 </Button>
                 <Button
                   asChild
@@ -141,25 +149,16 @@ export default function LandingPage() {
                   size="lg"
                   className="text-base"
                 >
-                  <Link href="#countries">View Supported Countries</Link>
+                  <CmsLink itemId="hero" fieldKey="secondaryCtaHref" fallbackHref="#countries"><CmsText itemId="hero" fieldKey="secondaryCtaLabel" /></CmsLink>
                 </Button>
               </div>
 
               {/* Trust signals */}
               <div className="mt-6 flex flex-wrap justify-center gap-x-4 gap-y-2 lg:justify-start">
-                {[
-                  "✓ Free to use",
-                  "✓ No credit card required",
-                  "✓ Source-linked rule references",
-                  "✓ Multiple purposes supported",
-                ].map((signal) => (
-                  <span
-                    key={signal}
-                    className="text-sm text-muted-foreground font-medium"
-                  >
-                    {signal}
-                  </span>
-                ))}
+                <CmsCheckText itemId="hero" fieldKey="reassuranceOne" />
+                <CmsCheckText itemId="hero" fieldKey="reassuranceTwo" />
+                <span className="text-sm font-medium text-muted-foreground">✓ Source-linked rule references</span>
+                <span className="text-sm font-medium text-muted-foreground">✓ Multiple purposes supported</span>
               </div>
             </div>
 
@@ -176,14 +175,13 @@ export default function LandingPage() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
               <Badge className="mb-4 bg-primary/20 text-primary border-primary/30">
-                The Nigerian Reality
+                <CmsText itemId="reality" fieldKey="eyebrow" />
               </Badge>
               <h2 className="text-4xl md:text-5xl xl:text-6xl font-bold text-background mb-6 leading-tight text-balance">
-                What a Basic Calculator Misses
+                <CmsText itemId="reality" fieldKey="heading" />
               </h2>
               <p className="text-lg md:text-xl text-background/70 max-w-3xl mx-auto leading-relaxed text-balance">
-                A useful plan separates official reference amounts from FX
-                assumptions, timing heuristics, and the evidence unique to you.
+                <CmsText itemId="reality" fieldKey="description" />
               </p>
             </div>
 
@@ -195,7 +193,7 @@ export default function LandingPage() {
                 >
                   <CardContent className="p-8 lg:p-10">
                     <p className="text-base font-semibold text-primary mb-6">
-                      {item.country}
+                      <CmsText itemId={item.cmsId} fieldKey="country">{item.country}</CmsText>
                     </p>
 
                     {/* Myth */}
@@ -206,7 +204,7 @@ export default function LandingPage() {
                           The Myth
                         </p>
                         <p className="text-base leading-relaxed text-background/75">
-                          {item.myth}
+                          <CmsText itemId={item.cmsId} fieldKey="myth">{item.myth}</CmsText>
                         </p>
                       </div>
                     </div>
@@ -219,7 +217,7 @@ export default function LandingPage() {
                           The Reality
                         </p>
                         <p className="text-sm text-background/70">
-                          {item.reality}
+                          <CmsText itemId={item.cmsId} fieldKey="reality">{item.reality}</CmsText>
                         </p>
                       </div>
                     </div>
@@ -235,26 +233,26 @@ export default function LandingPage() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
               <Badge className="mb-4 bg-primary/10 text-primary border-primary/20">
-                How it works
+                <CmsText itemId="how" fieldKey="eyebrow" />
               </Badge>
               <h2 className="text-4xl md:text-5xl xl:text-6xl font-bold mb-6 text-balance leading-tight">
-                From confusion to clarity in 4 steps
+                <CmsText itemId="how" fieldKey="heading" />
               </h2>
               <p className="text-lg md:text-xl text-muted-foreground mx-auto leading-relaxed text-balance">
-                No spreadsheets. No guesswork. Just your personalised POF
-                strategy in minutes.
+                <CmsText itemId="how" fieldKey="description" />
               </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-12">
-              {STEPS.map((item) => (
+              {STEPS.map((item, index) => (
+                // Content stays mapped to stable CMS identifiers while layout remains code-owned.
                 <div key={item.step} className="relative">
                   <div className="text-6xl lg:text-7xl font-bold text-primary/30 mb-6">
                     {item.step}
                   </div>
-                  <h3 className="text-2xl font-semibold mb-4">{item.title}</h3>
+                  <h3 className="text-2xl font-semibold mb-4"><CmsText itemId={`how-step-${index + 1}`} fieldKey="title">{item.title}</CmsText></h3>
                   <p className="text-base text-muted-foreground leading-relaxed">
-                    {item.description}
+                    <CmsText itemId={`how-step-${index + 1}`} fieldKey="description">{item.description}</CmsText>
                   </p>
                 </div>
               ))}
@@ -267,19 +265,18 @@ export default function LandingPage() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
               <Badge className="mb-4 bg-primary/10 text-primary border-primary/20">
-                Features
+                <CmsText itemId="features" fieldKey="eyebrow" />
               </Badge>
               <h2 className="text-4xl md:text-5xl xl:text-6xl md:text-4xl font-bold mb-6 text-balance leading-tight">
-                Everything you need to plan with confidence
+                <CmsText itemId="features" fieldKey="heading" />
               </h2>
               <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed text-balance">
-                Built specifically around the financial realities Nigerian visa
-                applicants face every day.
+                <CmsText itemId="features" fieldKey="description" />
               </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {FEATURES.map((feature) => (
+              {FEATURES.map((feature, index) => (
                 <Card
                   key={feature.title}
                   className="border-border rounded-3xl shadow-sm hover:shadow-lg transition-all"
@@ -288,9 +285,9 @@ export default function LandingPage() {
                     <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
                       <feature.icon className="w-6 h-6 text-primary" />
                     </div>
-                    <h3 className="text-2xl font-bold mb-4">{feature.title}</h3>
+                    <h3 className="text-2xl font-bold mb-4"><CmsText itemId={`feature-${index + 1}`} fieldKey="title">{feature.title}</CmsText></h3>
                     <p className="text-base text-muted-foreground leading-relaxed">
-                      {feature.description}
+                      <CmsText itemId={`feature-${index + 1}`} fieldKey="description">{feature.description}</CmsText>
                     </p>
                   </CardContent>
                 </Card>
@@ -365,24 +362,24 @@ export default function LandingPage() {
         <section className="py-32 lg:py-40 bg-foreground">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h2 className="text-4xl md:text-6xl xl:text-7xl font-bold leading-tight text-balance text-background/70">
-              Your visa is too important to leave to guesswork.
+              <CmsText itemId="final-cta" fieldKey="heading" />
             </h2>
             <p className="text-xl md:text-2xl text-background/70 leading-relaxed">
-              Build your financial strategy from source-reviewed references,
-              indicative Naira estimates, and a timeline you can act on.
+              <CmsText itemId="final-cta" fieldKey="description" />
             </p>
             <Button asChild size="lg" className="mt-8 max-w-full text-base">
               <Link href="/calculator">
-                Generate Timeline
+                <CmsText itemId="final-cta" fieldKey="ctaLabel" />
                 <ArrowRight className="ml-2 w-5 h-5" />
               </Link>
             </Button>
             <p className="text-sm text-background/40 mt-6">
-              Free to use. No credit card. No spam.
+              <CmsText itemId="final-cta" fieldKey="reassurance" />
             </p>
           </div>
         </section>
       </div>
+      </LandingCms>
 
       <Footer />
     </>

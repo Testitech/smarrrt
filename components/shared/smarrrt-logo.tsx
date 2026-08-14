@@ -28,6 +28,14 @@ const variants = {
   },
 } as const;
 
+
+export function SmarrrtMark({ className }: { className?: string }) {
+  return (
+    <span className={cn("inline-flex shrink-0 items-center justify-center bg-primary font-black leading-none text-primary-foreground shadow-sm", className)}>
+      Sm
+    </span>
+  );
+}
 type SmarrrtLogoProps = {
   variant?: keyof typeof variants;
   href?: string;
@@ -45,14 +53,8 @@ export function SmarrrtLogo({
   const tagline = showTagline ?? config.tagline;
   const content = (
     <span className={cn("inline-flex items-center", config.gap, className)}>
-      <span
-        className={cn(
-          "inline-flex shrink-0 items-center justify-center bg-primary font-black leading-none text-primary-foreground shadow-sm",
-          config.icon,
-        )}
-      >
-        Sm
-      </span>
+      <SmarrrtMark className={config.icon} />
+
       <span className="min-w-0">
         <span
           className={cn(

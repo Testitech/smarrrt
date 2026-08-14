@@ -2,11 +2,11 @@ import { Card, CardContent } from "@/components/ui/card";
 
 export default function Loading() {
   return (
-    <div className="space-y-8 animate-pulse">
+    <div className="space-y-8 animate-pulse motion-reduce:animate-none">
       {/* Header */}
       <div className="space-y-2">
         <div className="h-8 w-52 rounded-md bg-muted" />
-        <div className="h-4 w-96 rounded-md bg-muted" />
+        <div className="h-4 w-full max-w-96 rounded-md bg-muted" />
       </div>
 
       {/* Explainer banner */}
@@ -25,7 +25,7 @@ export default function Loading() {
       <div className="space-y-4">
         <div className="h-6 w-48 rounded bg-muted" />
 
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
           {[...Array(6)].map((_, i) => (
             <Card key={i}>
               <CardContent className="p-4 space-y-3">
@@ -54,7 +54,7 @@ export default function Loading() {
                 <div className="h-8 w-32 rounded-full bg-muted" />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div className="h-28 rounded-xl bg-muted" />
                 <div className="h-28 rounded-xl bg-muted" />
               </div>

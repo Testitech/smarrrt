@@ -39,16 +39,18 @@ enum PofAmountScope {
 // ─────────────────────────────────────────
 
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String?   @unique
-  emailVerified DateTime?
-  image         String?
-  role          UserRole  @default(USER)
-  isActive      Boolean   @default(true)
-  lastLoginAt   DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id              String    @id @default(cuid())
+  name            String?
+  email           String?   @unique
+  emailVerified   DateTime?
+  image           String?
+  profileImageUrl String?
+  username        String?   @unique
+  role            UserRole  @default(USER)
+  isActive        Boolean   @default(true)
+  lastLoginAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   // relations
 
@@ -294,15 +296,22 @@ model AdminAuditLog {
   @@index([entityType, entityId])
 }
 
+model CmsItem {
+  collection String
+  itemId     String
+  data       Json
+  order      Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
+  @@id([collection, itemId])
+  @@index([collection, order])
+}
 
-/*
-best way to remebeer
-
-I changed schema.prisma and need a new migration
-→ migrate dev
-
-A migration already exists and just needs applying
-→ migrate deploy
-
-*/
+/**
+ * best way to remebeer
+ * I changed schema.prisma and need a new migration
+ * → migrate dev
+ * A migration already exists and just needs applying
+ * → migrate deploy
+ */

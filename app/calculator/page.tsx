@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { SmarrrtLogo } from "@/components/shared/smarrrt-logo";
+import { useToast } from "@/components/shared/toast";
 import { formatNaira } from "@/lib/format";
 import {
   Select,
@@ -112,6 +113,7 @@ function readAuthMarker() {
 
 export default function CalculatorPage() {
   const router = useRouter();
+  const toast = useToast();
   const [selectedCountry, setSelectedCountry] = useState("");
   const [selectedPurpose, setSelectedPurpose] = useState("");
   const [intakeMonth, setIntakeMonth] = useState("");
@@ -198,12 +200,13 @@ export default function CalculatorPage() {
       setShowTeaser(true);
       setGenerateState("idle");
     } catch (error) {
+      console.error("[Calculator] Calculation failed", error);
       setPreview(null);
       setGenerateState("error");
-      setGenerateError(
-        error instanceof Error
-          ? error.message
-          : "Unable to calculate this plan.",
+      setGenerateError("Unable to prepare this calculation. Try again.");
+      toast.error(
+        "Unable to prepare your plan",
+        "Check your selections and try again.",
       );
     }
   }
@@ -268,6 +271,10 @@ export default function CalculatorPage() {
         if (!cancelled) {
           setOptions([]);
           setOptionsState("error");
+          toast.error(
+            "Unable to load supported routes",
+            "Refresh the page and try again.",
+          );
         }
       }
     }
@@ -277,7 +284,7 @@ export default function CalculatorPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [toast]);
 
   async function handleSave() {
     if (!selectedCountry || !selectedPurpose || !intakeDate) return;
@@ -289,6 +296,7 @@ export default function CalculatorPage() {
     if (!Number.isFinite(balance) || balance < 0) {
       setSaveError("Please enter a valid account balance.");
       setSaveState("error");
+      toast.warning("Check your balance", "Enter zero or a valid current balance.");
       return;
     }
 
@@ -316,17 +324,18 @@ export default function CalculatorPage() {
       }
 
       setSaveState("success");
+      toast.success("Strategy saved", "Opening your full strategy now.");
 
       redirectTimeout.current = setTimeout(() => {
         router.push(`/dashboard/${json.data.slug}`);
       }, 1500);
     } catch (err) {
-      console.error(err);
-
+      console.error("[Calculator] Save failed", err);
       setSaveState("error");
-
-      setSaveError(
-        err instanceof Error ? err.message : "Something went wrong.",
+      setSaveError("Unable to save your strategy. Try again.");
+      toast.error(
+        "Unable to save your strategy",
+        "Your calculation is still here. Please try again.",
       );
     }
   }

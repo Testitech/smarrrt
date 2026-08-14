@@ -1,186 +1,52 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { CheckCircle, AlertTriangle, X, Info } from "lucide-react";
-
-// ─────────────────────────────────────────
-// TYPES
-// ─────────────────────────────────────────
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { AlertTriangle, CheckCircle2, CircleAlert, Info, X, type LucideIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export type ToastType = "success" | "error" | "warning" | "info";
-
-export type Toast = {
-  id: string;
-  type: ToastType;
-  title: string;
-  message?: string;
-  duration?: number;
+type Toast = { id: string; type: ToastType; title: string; message?: string; duration?: number };
+type ToastApi = Record<ToastType, (title: string, message?: string) => void>;
+const ToastContext = createContext<ToastApi | null>(null);
+const styles: Record<ToastType, { icon: LucideIcon; accent: string; iconClass: string }> = {
+  success: { icon: CheckCircle2, accent: "border-l-emerald-500", iconClass: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" },
+  error: { icon: CircleAlert, accent: "border-l-destructive", iconClass: "bg-destructive/10 text-destructive" },
+  warning: { icon: AlertTriangle, accent: "border-l-amber-500", iconClass: "bg-amber-500/10 text-amber-700 dark:text-amber-400" },
+  info: { icon: Info, accent: "border-l-primary", iconClass: "bg-primary/10 text-primary" },
 };
 
-type ToastProps = {
-  toast: Toast;
-  onDismiss: (id: string) => void;
-};
-
-// ─────────────────────────────────────────
-// CONFIG
-// ─────────────────────────────────────────
-
-const TOAST_CONFIG: Record<
-  ToastType,
-  {
-    icon: React.ElementType;
-    containerClass: string;
-    iconClass: string;
-    titleClass: string;
-  }
-> = {
-  success: {
-    icon: CheckCircle,
-    containerClass:
-      "border-green-200 bg-green-50 dark:bg-green-950/40 dark:border-green-800",
-    iconClass: "text-green-600 dark:text-green-400",
-    titleClass: "text-green-800 dark:text-green-300",
-  },
-  error: {
-    icon: AlertTriangle,
-    containerClass:
-      "border-red-200 bg-red-50 dark:bg-red-950/40 dark:border-red-800",
-    iconClass: "text-red-600 dark:text-red-400",
-    titleClass: "text-red-800 dark:text-red-300",
-  },
-  warning: {
-    icon: AlertTriangle,
-    containerClass:
-      "border-yellow-200 bg-yellow-50 dark:bg-yellow-950/40 dark:border-yellow-800",
-    iconClass: "text-yellow-600 dark:text-yellow-400",
-    titleClass: "text-yellow-800 dark:text-yellow-300",
-  },
-  info: {
-    icon: Info,
-    containerClass:
-      "border-blue-200 bg-blue-50 dark:bg-blue-950/40 dark:border-blue-800",
-    iconClass: "text-blue-600 dark:text-blue-400",
-    titleClass: "text-blue-800 dark:text-blue-300",
-  },
-};
-
-// ─────────────────────────────────────────
-// SINGLE TOAST
-// ─────────────────────────────────────────
-
-function ToastItem({ toast, onDismiss }: ToastProps) {
+function ToastItem({ toast, dismiss }: { toast: Toast; dismiss: (id: string) => void }) {
   const [visible, setVisible] = useState(false);
-  const config = TOAST_CONFIG[toast.type];
-  const Icon = config.icon;
-
+  const style = styles[toast.type];
+  const Icon = style.icon;
+  const close = useCallback(() => { setVisible(false); window.setTimeout(() => dismiss(toast.id), 180); }, [dismiss, toast.id]);
   useEffect(() => {
-    // Animate in
-    const showTimer = setTimeout(() => setVisible(true), 10);
-
-    // Auto dismiss
-    const dismissTimer = setTimeout(() => {
-      setVisible(false);
-      setTimeout(() => onDismiss(toast.id), 300);
-    }, toast.duration ?? 4000);
-
-    return () => {
-      clearTimeout(showTimer);
-      clearTimeout(dismissTimer);
-    };
-  }, [toast.id, toast.duration, onDismiss]);
-
+    const showTimer = window.setTimeout(() => setVisible(true), 10);
+    const dismissTimer = window.setTimeout(close, toast.duration ?? 4500);
+    return () => { window.clearTimeout(showTimer); window.clearTimeout(dismissTimer); };
+  }, [close, toast.duration]);
   return (
-    <div
-      className={`
-        flex items-start gap-3 w-full max-w-sm
-        border rounded-xl px-4 py-3 shadow-lg
-        transition-all duration-300 ease-out
-        ${config.containerClass}
-        ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"}
-      `}
-    >
-      {/* Icon */}
-      <Icon className={`w-5 h-5 flex-shrink-0 mt-0.5 ${config.iconClass}`} />
-
-      {/* Content */}
-      <div className="flex-1 min-w-0">
-        <p className={`text-sm font-semibold ${config.titleClass}`}>
-          {toast.title}
-        </p>
-        {toast.message && (
-          <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
-            {toast.message}
-          </p>
-        )}
-      </div>
-
-      {/* Dismiss button */}
-      <button
-        onClick={() => {
-          setVisible(false);
-          setTimeout(() => onDismiss(toast.id), 300);
-        }}
-        className="flex-shrink-0 text-muted-foreground hover:text-foreground transition-colors mt-0.5"
-      >
-        <X className="w-4 h-4" />
-      </button>
+    <div role={toast.type === "error" ? "alert" : "status"} aria-live={toast.type === "error" ? "assertive" : "polite"} className={cn("pointer-events-auto flex w-full items-start gap-3 rounded-xl border border-l-4 border-border bg-background p-4 text-foreground shadow-xl transition duration-200 motion-reduce:transition-none sm:max-w-sm", style.accent, visible ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0 motion-reduce:translate-y-0")}>
+      <span className={cn("grid size-8 shrink-0 place-items-center rounded-lg", style.iconClass)}><Icon aria-hidden="true" className="size-4" /></span>
+      <div className="min-w-0 flex-1 pt-0.5"><p className="text-sm font-semibold leading-5">{toast.title}</p>{toast.message ? <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{toast.message}</p> : null}</div>
+      <button type="button" onClick={close} aria-label="Dismiss notification" className="grid size-8 shrink-0 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><X aria-hidden="true" className="size-4" /></button>
     </div>
   );
 }
 
-// ─────────────────────────────────────────
-// TOAST CONTAINER
-// ─────────────────────────────────────────
-
-type ToastContainerProps = {
-  toasts: Toast[];
-  onDismiss: (id: string) => void;
-};
-
-export function ToastContainer({ toasts, onDismiss }: ToastContainerProps) {
-  if (toasts.length === 0) return null;
-
-  return (
-    <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 items-end">
-      {toasts.map((toast) => (
-        <ToastItem key={toast.id} toast={toast} onDismiss={onDismiss} />
-      ))}
-    </div>
-  );
+export function ToastProvider({ children }: { children: ReactNode }) {
+  const [toasts, setToasts] = useState<Toast[]>([]);
+  const dismiss = useCallback((id: string) => setToasts((current) => current.filter((toast) => toast.id !== id)), []);
+  const add = useCallback((type: ToastType, title: string, message?: string) => {
+    const id = crypto.randomUUID();
+    setToasts((current) => [...current.slice(-2), { id, type, title, message }]);
+  }, []);
+  const api = useMemo<ToastApi>(() => ({ success: (title, message) => add("success", title, message), error: (title, message) => add("error", title, message), warning: (title, message) => add("warning", title, message), info: (title, message) => add("info", title, message) }), [add]);
+  return <ToastContext.Provider value={api}>{children}<div className="pointer-events-none fixed inset-x-3 top-3 z-[100] flex flex-col items-end gap-2 sm:inset-x-auto sm:right-5 sm:top-5">{toasts.map((toast) => <ToastItem key={toast.id} toast={toast} dismiss={dismiss} />)}</div></ToastContext.Provider>;
 }
-
-// ─────────────────────────────────────────
-// TOAST HOOK
-// Use this anywhere in the app
-// ─────────────────────────────────────────
 
 export function useToast() {
-  const [toasts, setToasts] = useState<Toast[]>([]);
-
-  function addToast(
-    type: ToastType,
-    title: string,
-    message?: string,
-    duration?: number,
-  ) {
-    const id = Math.random().toString(36).slice(2, 9);
-    setToasts((prev) => [...prev, { id, type, title, message, duration }]);
-  }
-
-  function dismissToast(id: string) {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
-  }
-
-  return {
-    toasts,
-    dismissToast,
-    success: (title: string, message?: string) =>
-      addToast("success", title, message),
-    error: (title: string, message?: string) =>
-      addToast("error", title, message),
-    warning: (title: string, message?: string) =>
-      addToast("warning", title, message),
-    info: (title: string, message?: string) => addToast("info", title, message),
-  };
+  const context = useContext(ToastContext);
+  if (!context) throw new Error("useToast must be used within ToastProvider");
+  return context;
 }

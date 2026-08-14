@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { TrendingUp, TrendingDown, RefreshCw, AlertCircle } from "lucide-react";
 import type { FxRateDto } from "@/types";
+import { useToast } from "@/components/shared/toast";
 
 // ─────────────────────────────────────────
 // TYPES
@@ -189,13 +190,14 @@ function RateCardSkeleton() {
 // ─────────────────────────────────────────
 
 export default function FxRail() {
+  const toast = useToast();
   const [rates, setRates] = useState<FxRateWithMeta[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastChecked, setLastChecked] = useState<Date | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
-  const fetchRates = useCallback(async () => {
+  const fetchRates = useCallback(async (notify = false) => {
     try {
       setRefreshing(true);
       setError(null);
@@ -210,16 +212,20 @@ export default function FxRail() {
 
       setRates(json.data);
       setLastChecked(new Date());
+      if (notify) toast.success("FX references updated");
     } catch (err) {
       setError(
         "Could not refresh the FX references. Any cards below are from the last successful check.",
       );
       console.error("[FxRail] Fetch failed:", err);
+      if (notify) {
+        toast.error("Unable to refresh FX references", "The last available references remain visible.");
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [toast]);
 
   useEffect(() => {
     void fetchRates();
@@ -254,7 +260,7 @@ export default function FxRail() {
         </div>
         <button
           type="button"
-          onClick={() => void fetchRates()}
+          onClick={() => void fetchRates(true)}
           disabled={refreshing}
           className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-border/60 bg-background px-3 py-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-50"
         >

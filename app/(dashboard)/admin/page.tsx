@@ -23,6 +23,8 @@ import {
 } from "@/components/ui/card";
 import { getAdminDashboardData } from "@/lib/admin-dashboard";
 import { requireAdmin } from "@/lib/dal";
+import { AdminNoticeToast } from "@/components/admin/admin-notice-toast";
+import { SubmitButton } from "@/components/shared/submit-button";
 
 type AdminPageProps = {
   searchParams: Promise<{ status?: string | string[] }>;
@@ -303,10 +305,11 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
       </header>
 
       {notice ? (
-        <Alert variant={notice.destructive ? "destructive" : "default"}>
-          <AlertTitle>{notice.title}</AlertTitle>
-          <AlertDescription>{notice.description}</AlertDescription>
-        </Alert>
+        <AdminNoticeToast
+          title={notice.title}
+          description={notice.description}
+          type={notice.destructive ? "error" : "success"}
+        />
       ) : null}
 
       <section aria-labelledby="overview-heading" className="space-y-4">
@@ -369,7 +372,14 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                   </tr>
                 </thead>
                 <tbody className="divide-y">
-                  {data.users.recent.map((user) => {
+                  {data.users.recent.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="px-4 py-12 text-center">
+                        <p className="font-semibold text-foreground">No users yet</p>
+                        <p className="mt-1 text-sm text-muted-foreground">New accounts will appear here after their first sign-in.</p>
+                      </td>
+                    </tr>
+                  ) : null}                  {data.users.recent.map((user) => {
                     const isCurrentAdmin = user.id === admin.id;
                     const isProtectedLastAdmin =
                       user.isActive &&
@@ -424,7 +434,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                                 value={user.role === "ADMIN" ? "USER" : "ADMIN"}
                               />
 
-                              <Button
+                              <SubmitButton pendingLabel="Updating role…"
                                 type="submit"
                                 size="sm"
                                 variant="outline"
@@ -448,7 +458,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                                 {user.role === "ADMIN"
                                   ? "Demote"
                                   : "Make Admin"}
-                              </Button>
+                              </SubmitButton>
                             </form>
 
                             <form action={setUserActive}>
@@ -464,7 +474,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                                 value={String(!user.isActive)}
                               />
 
-                              <Button
+                              <SubmitButton pendingLabel="Updating account…"
                                 type="submit"
                                 size="sm"
                                 variant={
@@ -480,7 +490,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                                 }
                               >
                                 {user.isActive ? "Deactivate" : "Activate"}
-                              </Button>
+                              </SubmitButton>
                             </form>
                           </div>
                         </td>
@@ -569,10 +579,10 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                                 name="deliveryId"
                                 value={delivery.id}
                               />
-                              <Button type="submit" size="sm" variant="outline">
+                              <SubmitButton pendingLabel="Retrying…" type="submit" size="sm" variant="outline">
                                 <RefreshCw aria-hidden="true" />
                                 Retry
-                              </Button>
+                              </SubmitButton>
                             </form>
                           ) : (
                             <span className="text-xs text-muted-foreground">
