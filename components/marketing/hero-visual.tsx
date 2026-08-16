@@ -17,7 +17,7 @@ export function HeroVisual() {
   const imageAlt = value(hero, "imageAlt", "A young Nigerian professional planning their international study finances");
 
   return (
-    <div className="relative mx-auto w-full max-w-[38rem] min-w-0 pb-12 pt-10 sm:pb-16 sm:pt-12 lg:mx-0 lg:pb-14">
+    <div className="motion-hero-media relative mx-auto w-full max-w-[38rem] min-w-0 pb-12 pt-10 sm:pb-16 sm:pt-12 lg:mx-0 lg:pb-14">
       <div className="absolute inset-x-5 top-4 h-[86%] rounded-[2.5rem] bg-primary/15 sm:inset-x-8" />
       <div className="absolute left-2 top-0 z-20 flex items-center gap-2 rounded-full border border-border bg-background px-3 py-2 text-xs font-semibold shadow-sm sm:left-7 sm:px-4 sm:text-sm">
         <CalendarDays className="size-4 text-primary" aria-hidden="true" />
@@ -42,7 +42,7 @@ export function HeroVisual() {
         <p className="mt-1 text-[clamp(1.35rem,7vw,2rem)] font-bold leading-none tabular-nums tracking-tight" title="Illustrative amount, not a live calculation">₦29.3M</p>
         <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-muted-foreground"><MapPin className="size-3.5 text-primary" aria-hidden="true" /> Canada · Study</p>
       </div>
-      <div className="absolute -right-10 top-[18%] z-20 hidden rounded-2xl border border-border/80 bg-background/95 p-4 shadow-xl backdrop-blur sm:block">
+      <div className="motion-drift absolute -right-10 top-[18%] z-20 hidden rounded-2xl border border-border/80 bg-background/95 p-4 shadow-xl backdrop-blur sm:block">
         <div className="flex items-center gap-2">
           <span className="grid size-8 place-items-center rounded-lg bg-primary/15"><TrendingUp className="size-4 text-primary" aria-hidden="true" /></span>
           <div>

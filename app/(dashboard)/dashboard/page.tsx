@@ -91,6 +91,7 @@ export default async function DashboardPage() {
       slug: true,
       currentStatus: true,
       targetAmount: true,
+      amountScope: true,
       monthlyDeposit: true,
       safeStartDate: true,
       intakeDate: true,
@@ -122,7 +123,7 @@ export default async function DashboardPage() {
   ).length;
 
   return (
-    <div className="relative space-y-8 md:space-y-10">
+    <div className="motion-reveal motion-reveal-immediate relative space-y-8 md:space-y-10">
       <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_right,hsl(var(--primary)/0.08),transparent_30%)]" />
       <section className="relative overflow-hidden rounded-3xl border border-border/50 bg-linear-to-br from-background to-muted/30 p-6 sm:p-8 md:p-10">
         <div
@@ -238,7 +239,7 @@ export default async function DashboardPage() {
         </Card>
       ) : (
         // Timeline cards
-        <section aria-labelledby="saved-strategies-heading" className="space-y-4">
+        <section id="saved-strategies" aria-labelledby="saved-strategies-heading" className="scroll-mt-24 space-y-4">
           <div>
             <h2 id="saved-strategies-heading" className="text-lg font-semibold">
               Your saved strategies
@@ -276,7 +277,9 @@ export default async function DashboardPage() {
                         Naira Target
                       </p>
                       <p className="break-words text-lg font-bold tracking-tight tabular-nums">
-                        {formatNaira(timeline.targetAmount)}
+                        {timeline.amountScope === "VARIABLE_REQUIREMENT" || timeline.targetAmount === null
+                          ? "Applicant-specific"
+                          : formatNaira(timeline.targetAmount)}
                       </p>
                     </div>
                     <div className="rounded-2xl border border-border/50 bg-muted/30 p-4">
@@ -284,7 +287,9 @@ export default async function DashboardPage() {
                         Suggested Monthly Deposit
                       </p>
                       <p className="break-words text-base font-bold tabular-nums">
-                        {formatNaira(timeline.monthlyDeposit)}
+                        {timeline.amountScope === "VARIABLE_REQUIREMENT" || timeline.monthlyDeposit === null
+                          ? "Not fixed"
+                          : formatNaira(timeline.monthlyDeposit)}
                       </p>
                     </div>
                   </div>

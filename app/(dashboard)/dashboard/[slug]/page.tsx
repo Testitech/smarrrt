@@ -130,6 +130,9 @@ export default async function StrategyPage({ params }: Props) {
       })
     : null;
 
+  const isVariableRequirement =
+    (timeline.amountScope ?? rule?.amountScope) === "VARIABLE_REQUIREMENT";
+
   // Interpolate analysis text
   const analysisText =
     rule && calculation
@@ -144,8 +147,12 @@ export default async function StrategyPage({ params }: Props) {
             "en-NG",
             { month: "long", year: "numeric" },
           ),
-          nairaTarget: formatNaira(calculation.recommendedNairaTarget),
-          monthlyDeposit: formatNaira(calculation.safeMonthlyDeposit),
+          nairaTarget: isVariableRequirement
+            ? "Applicant-specific"
+            : formatNaira(calculation.recommendedNairaTarget),
+          monthlyDeposit: isVariableRequirement
+            ? "Applicant-specific"
+            : formatNaira(calculation.safeMonthlyDeposit),
           currencyCode: timeline.country.currencyCode,
           minAmountForeign: rule.minAmountForeign,
         })
@@ -164,8 +171,12 @@ export default async function StrategyPage({ params }: Props) {
             "en-NG",
             { month: "long", year: "numeric" },
           ),
-          nairaTarget: formatNaira(calculation.recommendedNairaTarget),
-          monthlyDeposit: formatNaira(calculation.safeMonthlyDeposit),
+          nairaTarget: isVariableRequirement
+            ? "Applicant-specific"
+            : formatNaira(calculation.recommendedNairaTarget),
+          monthlyDeposit: isVariableRequirement
+            ? "Applicant-specific"
+            : formatNaira(calculation.safeMonthlyDeposit),
           currencyCode: timeline.country.currencyCode,
           minAmountForeign: rule.minAmountForeign,
         })
@@ -227,7 +238,11 @@ export default async function StrategyPage({ params }: Props) {
               dateStyle: "medium",
               timeStyle: "short",
             })}
-            {" "}recorded {formatNaira(timeline.targetAmount)} using rule{" "}
+            {" "}recorded{" "}
+            {timeline.targetAmount === null
+              ? "a variable requirement without a fabricated fixed target"
+              : formatNaira(timeline.targetAmount)}{" "}
+            using rule{" "}
             {timeline.ruleVersion ?? "not recorded"}
             {timeline.fxRateUsed
               ? ` and an FX rate of NGN ${timeline.fxRateUsed.toLocaleString("en-NG")}`
@@ -243,10 +258,12 @@ export default async function StrategyPage({ params }: Props) {
           {
             label: "Configured Rule Amount",
             value: rule
-              ? formatForeign(
-                  rule.minAmountForeign,
-                  timeline.country.currencyCode,
-                )
+              ? isVariableRequirement
+                ? "Applicant-specific"
+                : formatForeign(
+                    rule.minAmountForeign,
+                    timeline.country.currencyCode,
+                  )
               : "Unavailable",
             sub: rule
               ? AMOUNT_SCOPE_LABELS[rule.amountScope]
@@ -254,16 +271,16 @@ export default async function StrategyPage({ params }: Props) {
           },
           {
             label: "Estimated Naira Target",
-            value: formatNaira(
-              calculation?.recommendedNairaTarget ?? timeline.targetAmount,
-            ),
+            value: isVariableRequirement
+              ? "No fixed target"
+              : formatNaira(calculation?.recommendedNairaTarget ?? timeline.targetAmount ?? 0),
             sub: "Parallel reference + configured buffer",
           },
           {
             label: "Monthly Contribution",
-            value: formatNaira(
-              calculation?.safeMonthlyDeposit ?? timeline.monthlyDeposit,
-            ),
+            value: isVariableRequirement
+              ? "Not fixed"
+              : formatNaira(calculation?.safeMonthlyDeposit ?? timeline.monthlyDeposit ?? 0),
             sub: "Illustrative planning amount",
           },
           {
@@ -339,7 +356,7 @@ export default async function StrategyPage({ params }: Props) {
       )}
 
       {/* ── STATEMENT ANALYZER ── */}
-      {calculation && (
+      {calculation && !isVariableRequirement && (
         <StatementAnalyzer
           recommendedNairaTarget={calculation.recommendedNairaTarget}
           currentBalanceNaira={timeline.currentBalance}

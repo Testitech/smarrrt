@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, LogOut } from "lucide-react";
 import { SidebarNav } from "@/components/dashboard/sidebar-nav";
-import { MobileNav } from "@/components/dashboard/mobile-nav";
+import { MobileDashboardMenu } from "@/components/dashboard/mobile-dashboard-menu";
 import { SmarrrtLogo } from "@/components/shared/smarrrt-logo";
 
 export default async function DashboardLayout({
@@ -23,6 +23,10 @@ export default async function DashboardLayout({
   }
 
   const isAdmin = session.user.role === "ADMIN";
+  async function signOutAction() {
+    "use server";
+    await signOut({ redirectTo: "/" });
+  }
   const displayName = session.user.name?.trim() || "Smarrrt user";
   const initial =
     displayName.charAt(0).toUpperCase() ||
@@ -40,7 +44,7 @@ export default async function DashboardLayout({
       {/* ───────────────── SIDEBAR DESKTOP ───────────────── */}
       <aside
         aria-label="Dashboard sidebar"
-        className="fixed inset-y-0 left-0 z-50 hidden w-72 flex-col border-r border-border bg-background/95 backdrop-blur lg:flex"
+        className="fixed inset-y-0 left-0 z-50 hidden w-68 flex-col border-r border-border bg-background/95 backdrop-blur lg:flex"
       >
         {/* Logo */}
         <div className="px-6 py-7 border-b border-border">
@@ -118,13 +122,14 @@ export default async function DashboardLayout({
 
       {/* ───────────────── MOBILE TOPBAR ───────────────── */}
       <header className="lg:hidden sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur">
-        <div className="flex h-16 items-center justify-between px-4">
-          <SmarrrtLogo href="/dashboard" variant="header" />
+        <div className="grid h-16 grid-cols-[2.5rem_1fr_2.5rem] items-center gap-3 px-4">
+          <MobileDashboardMenu isAdmin={isAdmin} signOutAction={signOutAction} />
+          <div className="justify-self-center"><SmarrrtLogo href="/dashboard" variant="header" /></div>
 
           <Link
             href="/dashboard/settings"
             aria-label="Open account overview"
-            className="rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+            className="justify-self-end rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
           >
             {session.user.image ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -143,19 +148,16 @@ export default async function DashboardLayout({
       </header>
 
       {/* ───────────────── MAIN ───────────────── */}
-      <div className="lg:pl-72">
+      <div className="lg:pl-68">
         <main
           id="main-content"
-          className="mx-auto max-w-6xl px-4 py-6 pb-24 sm:px-6 md:px-8 md:py-8 lg:pb-8"
+          className="mx-auto max-w-[90rem] px-4 py-6 sm:px-6 md:px-8 md:py-8 2xl:px-10 2xl:py-10"
         >
           {children}
         </main>
       </div>
 
-      {/* ───────────────── MOBILE BOTTOM NAV ───────────────── */}
-      <div className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-background/95 backdrop-blur lg:hidden">
-        <MobileNav isAdmin={isAdmin} />
-      </div>
+
     </div>
   );
 }

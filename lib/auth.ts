@@ -163,5 +163,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   },
   session: {
     strategy: "database",
+    // Explicit rolling idle lifetime for database-backed sessions.
+    maxAge: 30 * 24 * 60 * 60,
   },
 });

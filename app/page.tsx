@@ -17,6 +17,7 @@ import { HeroVisual } from "@/components/marketing/hero-visual";
 import { CmsCheckText, CmsLink, CmsText, LandingCms } from "@/components/marketing/landing-cms";
 import { auth } from "@/lib/auth";
 import { loadLandingContent } from "@/lib/cms/content";
+import { prisma } from "@/lib/prisma";
 
 // ─────────────────────────────────────────
 // STATIC DATA
@@ -111,7 +112,13 @@ const STEPS = [
 
 export default async function LandingPage() {
   const [session, landingContent] = await Promise.all([auth(), loadLandingContent()]);
-  const isAdmin = session?.user?.role === "ADMIN" && session.user.isActive === true;
+  const editorUser = session?.user?.id
+    ? await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { role: true, isActive: true },
+      })
+    : null;
+  const isAdmin = editorUser?.role === "ADMIN" && editorUser.isActive;
 
   return (
     <>
@@ -121,13 +128,13 @@ export default async function LandingPage() {
       <div className="flex flex-col">
         {/* ── HERO ── */}
         <section className="relative overflow-hidden bg-background">
-          <div className="mx-auto grid max-w-7xl min-w-0 items-center gap-10 px-4 py-12 sm:px-6 sm:py-16 lg:grid-cols-[minmax(0,0.88fr)_minmax(0,1.12fr)] lg:gap-14 lg:px-8 lg:py-20">
-            <div className="min-w-0 text-center lg:text-left">
+          <div className="mx-auto grid max-w-[100rem] min-w-0 items-center gap-10 px-4 py-12 sm:px-6 sm:py-16 lg:grid-cols-[minmax(0,0.88fr)_minmax(0,1.12fr)] lg:gap-14 lg:px-8 lg:py-20">
+            <div className="motion-reveal motion-reveal-immediate min-w-0 text-center lg:text-left">
               <Badge className="mb-5 bg-primary/10 text-primary border-primary/20 hover:bg-primary/10">
                 <CmsText itemId="hero" fieldKey="eyebrow" />
               </Badge>
 
-              <h1 className="mb-5 text-[clamp(2.45rem,10.5vw,4.5rem)] font-extrabold leading-[0.98] tracking-[-0.035em] text-balance">
+              <h1 className="mb-5 text-[clamp(2.45rem,7vw,5.75rem)] font-extrabold leading-[0.98] tracking-[-0.035em] text-balance">
                 <CmsText itemId="hero" fieldKey="headlineBefore" />{" "}
                 <CmsText itemId="hero" fieldKey="headlineHighlight" as="span" className="text-primary" />
                 <br className="hidden sm:block" /> <CmsText itemId="hero" fieldKey="headlineAfter" />
@@ -171,7 +178,7 @@ export default async function LandingPage() {
         </section>
 
         {/* ── AGITATION — MYTH VS REALITY ── */}
-        <section className="bg-foreground py-24 lg:py-32">
+        <section className="motion-reveal bg-foreground py-24 lg:py-32 2xl:py-40">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
               <Badge className="mb-4 bg-primary/20 text-primary border-primary/30">
@@ -189,7 +196,7 @@ export default async function LandingPage() {
               {MYTHS.map((item) => (
                 <Card
                   key={item.id}
-                  className="bg-background/5 border-background/10 backdrop-blur-sm rounded-2xl hover:bg-background/[0.07] transition-all"
+                  className="motion-card bg-background/5 border-background/10 backdrop-blur-sm rounded-2xl hover:bg-background/[0.07] hover:shadow-xl"
                 >
                   <CardContent className="p-8 lg:p-10">
                     <p className="text-base font-semibold text-primary mb-6">
@@ -229,7 +236,7 @@ export default async function LandingPage() {
         </section>
 
         {/* ── HOW IT WORKS ── */}
-        <section id="how-it-works" className="py-24 lg:py-32 bg-background">
+        <section id="how-it-works" className="motion-reveal py-24 lg:py-32 2xl:py-40 bg-background">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
               <Badge className="mb-4 bg-primary/10 text-primary border-primary/20">
@@ -261,7 +268,7 @@ export default async function LandingPage() {
         </section>
 
         {/* ── FEATURES ── */}
-        <section id="features" className="py-24 lg:py-32 bg-muted/30">
+        <section id="features" className="motion-reveal py-24 lg:py-32 2xl:py-40 bg-muted/30">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
               <Badge className="mb-4 bg-primary/10 text-primary border-primary/20">
@@ -279,7 +286,7 @@ export default async function LandingPage() {
               {FEATURES.map((feature, index) => (
                 <Card
                   key={feature.title}
-                  className="border-border rounded-3xl shadow-sm hover:shadow-lg transition-all"
+                  className="motion-card border-border rounded-3xl shadow-sm hover:border-primary/30 hover:shadow-lg"
                 >
                   <CardContent className="p-8 lg:p-10">
                     <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
@@ -359,8 +366,8 @@ export default async function LandingPage() {
         </section>
 
         {/* ── FINAL CTA ── */}
-        <section className="py-32 lg:py-40 bg-foreground">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <section className="motion-reveal py-32 lg:py-40 2xl:py-48 bg-foreground">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h2 className="text-4xl md:text-6xl xl:text-7xl font-bold leading-tight text-balance text-background/70">
               <CmsText itemId="final-cta" fieldKey="heading" />
             </h2>

@@ -857,7 +857,6 @@ export default function CalculatorPage() {
                           size="lg"
                           onClick={handleSave}
                           disabled={
-                            isVariableRequirement ||
                             saveState === "saving" ||
                             currentBalance.trim() === ""
                           }
@@ -875,7 +874,7 @@ export default function CalculatorPage() {
                           ) : (
                             <>
                               {isVariableRequirement
-                                ? "Fixed Target Unavailable"
+                                ? "Save Planning Strategy"
                                 : "Save Strategy"}
                               <ArrowRight className="ml-2 h-4 w-4" />
                             </>
@@ -894,9 +893,9 @@ export default function CalculatorPage() {
                       </div>
                       {isVariableRequirement ? (
                         <p className="text-xs text-muted-foreground">
-                          This route is supported as official guidance, but it
-                          needs route-specific inputs before it can be saved as
-                          a fixed funding plan.
+                          This saves your preparation timing, balance, source,
+                          and route-specific guidance without inventing a fixed
+                          statutory target.
                         </p>
                       ) : null}
                     </>

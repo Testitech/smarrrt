@@ -230,8 +230,8 @@ model UserTimeline {
   intakeDate     DateTime
   intakeKey      String // UTC YYYY-MM, used for deterministic idempotency
   currentBalance Float // In Naira
-  targetAmount   Float // Calculated POF in Naira (parallel rate + buffer)
-  monthlyDeposit Float // Safe monthly deposit from analyzer
+  targetAmount   Float? // Null when the official requirement depends on applicant circumstances
+  monthlyDeposit Float? // Null when no responsible fixed funding pace can be calculated
 
   // Calculated timeline results
   safeStartDate    DateTime
@@ -243,6 +243,8 @@ model UserTimeline {
   calculatedAt  DateTime @default(now())
   ruleVersion   String?
   fxRateUsed    Float?
+  amountScope   PofAmountScope?
+  ruleSourceUrl String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

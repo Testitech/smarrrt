@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { calculatePof, interpolateAnalysisText } from "../lib/pof-engine";
+import {
+  calculatePof,
+  interpolateAnalysisText,
+  timelineFinancialSnapshot,
+} from "../lib/pof-engine";
 import type { FxRate, PofRule } from "../types";
 
 const rule: PofRule = {
@@ -123,4 +127,28 @@ test("interpolateAnalysisText replaces every supported placeholder", () => {
     rendered,
     `${values.parallelRate.toLocaleString("en-NG")}|${values.parallelRate.toLocaleString("en-NG")}|${values.cbnRate.toLocaleString("en-NG")}|January 2027|April 2027|NGN 1,575,000|NGN 131,250|TST|${values.minAmountForeign.toLocaleString()}`,
   );
+});
+
+test("timeline snapshot preserves fixed targets", () => {
+  const snapshot = timelineFinancialSnapshot("LIVING_COSTS_ONLY", {
+    recommendedNairaTarget: 12_500_000,
+    safeMonthlyDeposit: 625_000,
+  });
+
+  assert.deepEqual(snapshot, {
+    targetAmount: 12_500_000,
+    monthlyDeposit: 625_000,
+  });
+});
+
+test("timeline snapshot never fabricates a variable target", () => {
+  const snapshot = timelineFinancialSnapshot("VARIABLE_REQUIREMENT", {
+    recommendedNairaTarget: 0,
+    safeMonthlyDeposit: 0,
+  });
+
+  assert.deepEqual(snapshot, {
+    targetAmount: null,
+    monthlyDeposit: null,
+  });
 });

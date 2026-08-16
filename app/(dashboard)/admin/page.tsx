@@ -379,7 +379,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                         <p className="mt-1 text-sm text-muted-foreground">New accounts will appear here after their first sign-in.</p>
                       </td>
                     </tr>
-                  ) : null}                  {data.users.recent.map((user) => {
+                  ) : null}{data.users.recent.map((user) => {
                     const isCurrentAdmin = user.id === admin.id;
                     const isProtectedLastAdmin =
                       user.isActive &&

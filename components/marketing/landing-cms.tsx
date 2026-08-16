@@ -29,9 +29,9 @@ function EditorToolbar({ editing, setEditing }: { editing: boolean; setEditing: 
   }
 
   return (
-    <div className="fixed inset-x-3 bottom-[calc(1rem+env(safe-area-inset-bottom))] z-50 mx-auto flex max-w-md items-center gap-2 rounded-2xl border border-border bg-background/95 p-2 shadow-2xl backdrop-blur sm:inset-x-auto sm:right-5 sm:mx-0">
+    <div role="status" aria-live="polite" className={`fixed inset-x-3 bottom-[calc(1rem+env(safe-area-inset-bottom))] z-[60] mx-auto flex max-w-md items-center gap-2 rounded-2xl border bg-background/95 p-2 shadow-2xl backdrop-blur transition-colors duration-200 sm:inset-x-auto sm:right-5 sm:mx-0 ${editing ? "border-primary ring-2 ring-primary/20" : "border-border"}`}>
       <div className="min-w-0 flex-1 px-2">
-        <p className="truncate text-sm font-semibold">Landing page editor</p>
+        <p className="flex items-center gap-2 truncate text-sm font-semibold">{editing ? <span className="size-2 rounded-full bg-primary" aria-hidden="true" /> : null}{editing ? "Edit mode active" : "Landing page editor"}</p>
         <p className="truncate text-xs text-muted-foreground">
           {saving ? "Saving content…" : hasUnsavedChanges ? "Unsaved changes" : editing ? "Click highlighted text to edit" : "Preview mode"}
         </p>
@@ -45,7 +45,7 @@ function EditorToolbar({ editing, setEditing }: { editing: boolean; setEditing: 
           </Button>
         </>
       ) : (
-        <Button type="button" size="sm" onClick={() => setEditing(true)}><Pencil className="size-4" /> Edit content</Button>
+        <Button type="button" size="sm" onClick={() => { setEditing(true); toast.info("Edit mode active", "Select highlighted landing-page content to make changes."); }}><Pencil className="size-4" /> Edit content</Button>
       )}
     </div>
   );
@@ -60,7 +60,7 @@ export function LandingCms({ children, initialItems, isAdmin }: LandingCmsProps)
   return (
     <CmsAuthProvider value={authState}>
       <PageProvider transport={restTransport({ apiBasePath: "/api/cms" })} initialItems={initialItems} notify={notifier} storage={cmsImageStorage}>
-        {children}
+        <div data-cms-editing={editing ? "true" : "false"}>{children}</div>
         {isAdmin ? <EditorToolbar editing={editing} setEditing={setEditing} /> : null}
       </PageProvider>
     </CmsAuthProvider>

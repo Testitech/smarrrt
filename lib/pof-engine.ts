@@ -208,6 +208,19 @@ function generateMonthlyBreakdown(
 }
 
 // ─────────────────────────────────────────
+export function timelineFinancialSnapshot(
+  amountScope: PofRule["amountScope"],
+  calculation: Pick<PofCalculationResult, "recommendedNairaTarget" | "safeMonthlyDeposit">,
+): { targetAmount: number | null; monthlyDeposit: number | null } {
+  if (amountScope === "VARIABLE_REQUIREMENT") {
+    return { targetAmount: null, monthlyDeposit: null };
+  }
+
+  return {
+    targetAmount: calculation.recommendedNairaTarget,
+    monthlyDeposit: calculation.safeMonthlyDeposit,
+  };
+}
 // MAIN ENGINE FUNCTION
 // ─────────────────────────────────────────
 

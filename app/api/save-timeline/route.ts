@@ -10,6 +10,7 @@ import {
 } from "@/lib/pof-request";
 import { prisma } from "@/lib/prisma";
 import type { ApiResponse } from "@/types";
+import { timelineFinancialSnapshot } from "@/lib/pof-engine";
 
 const NO_STORE_HEADERS = {
   "Cache-Control": "private, no-store, max-age=0",
@@ -70,14 +71,12 @@ export async function POST(request: Request) {
     const { country, purpose, rule, fxRate, calculation } =
       await calculatePofRequest(input);
 
-    if (rule.amountScope === "VARIABLE_REQUIREMENT") {
-      throw new PofRequestError(
-        "This route needs applicant-specific financial inputs before it can be saved as a fixed strategy.",
-        422,
-      );
-    }
 
     const calculatedAt = new Date();
+    const { targetAmount, monthlyDeposit } = timelineFinancialSnapshot(
+      rule.amountScope,
+      calculation,
+    );
     const compoundKey = {
       userId: session.user.id,
       countryId: country.id,
@@ -91,8 +90,8 @@ export async function POST(request: Request) {
       update: {
         intakeDate: input.intakeDate,
         currentBalance: input.currentBalance,
-        targetAmount: calculation.recommendedNairaTarget,
-        monthlyDeposit: calculation.safeMonthlyDeposit,
+        targetAmount,
+        monthlyDeposit,
         safeStartDate: calculation.safeStartDate,
         cautionStartDate: calculation.cautionStartDate,
         riskyStartDate: calculation.riskyStartDate,
@@ -100,14 +99,16 @@ export async function POST(request: Request) {
         calculatedAt,
         ruleVersion: rule.ruleVersion,
         fxRateUsed: fxRate.parallelRate,
+        amountScope: rule.amountScope,
+        ruleSourceUrl: rule.sourceUrl,
       },
       create: {
         ...compoundKey,
         slug: newTimelineSlug(country.name, purpose.name, input.intakeKey),
         intakeDate: input.intakeDate,
         currentBalance: input.currentBalance,
-        targetAmount: calculation.recommendedNairaTarget,
-        monthlyDeposit: calculation.safeMonthlyDeposit,
+        targetAmount,
+        monthlyDeposit,
         safeStartDate: calculation.safeStartDate,
         cautionStartDate: calculation.cautionStartDate,
         riskyStartDate: calculation.riskyStartDate,
@@ -115,6 +116,8 @@ export async function POST(request: Request) {
         calculatedAt,
         ruleVersion: rule.ruleVersion,
         fxRateUsed: fxRate.parallelRate,
+        amountScope: rule.amountScope,
+        ruleSourceUrl: rule.sourceUrl,
       },
       select: {
         slug: true,

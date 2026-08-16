@@ -3,81 +3,62 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  Bookmark,
   Calculator,
   LayoutDashboard,
   Settings,
   ShieldCheck,
   TrendingUp,
+  type LucideIcon,
 } from "lucide-react";
 
-const PRIMARY_NAV_ITEMS = [
-  {
-    label: "Dashboard",
-    href: "/dashboard",
-    icon: LayoutDashboard,
-  },
-  {
-    label: "POF Calculator",
-    href: "/calculator",
-    icon: Calculator,
-  },
-  {
-    label: "FX Rates",
-    href: "/dashboard/fx-rates",
-    icon: TrendingUp,
-  },
+export type DashboardNavItem = {
+  label: string;
+  href: string;
+  icon: LucideIcon;
+  adminOnly?: boolean;
+};
+
+export const DASHBOARD_NAV_ITEMS: DashboardNavItem[] = [
+  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { label: "Saved strategies", href: "/dashboard#saved-strategies", icon: Bookmark },
+  { label: "POF Calculator", href: "/calculator", icon: Calculator },
+  { label: "FX Rates", href: "/dashboard/fx-rates", icon: TrendingUp },
+  { label: "Settings", href: "/dashboard/settings", icon: Settings },
+  { label: "Admin", href: "/admin", icon: ShieldCheck, adminOnly: true },
 ];
 
-const SETTINGS_NAV_ITEM = {
-  label: "Settings",
-  href: "/dashboard/settings",
-  icon: Settings,
-};
+function itemPath(href: string) {
+  return href.split("#")[0];
+}
 
-const ADMIN_NAV_ITEM = {
-  label: "Admin",
-  href: "/admin",
-  icon: ShieldCheck,
-};
+export function isDashboardItemActive(pathname: string, href: string) {
+  const path = itemPath(href);
+  if (href.includes("#")) return false;
+  if (path === "/dashboard") return pathname === path;
+  return pathname === path || pathname.startsWith(`${path}/`);
+}
 
-type SidebarNavProps = {
-  isAdmin?: boolean;
-};
-
-export function SidebarNav({ isAdmin = false }: SidebarNavProps) {
+export function SidebarNav({ isAdmin = false }: { isAdmin?: boolean }) {
   const pathname = usePathname();
-  const navItems = isAdmin
-    ? [...PRIMARY_NAV_ITEMS, ADMIN_NAV_ITEM, SETTINGS_NAV_ITEM]
-    : [...PRIMARY_NAV_ITEMS, SETTINGS_NAV_ITEM];
-  const activeHref = navItems
-    .filter(
-      ({ href }) => pathname === href || pathname.startsWith(`${href}/`),
-    )
-    .sort((a, b) => b.href.length - a.href.length)[0]?.href;
+  const navItems = DASHBOARD_NAV_ITEMS.filter(
+    (item) => !item.adminOnly || isAdmin,
+  );
 
   return (
-    <nav aria-label="Dashboard navigation" className="flex-1 px-3 py-4">
-      <ul className="space-y-2">
+    <nav aria-label="Dashboard navigation" className="flex-1 overflow-y-auto px-3 py-4">
+      <ul className="space-y-1">
         {navItems.map((item) => {
-          const isActive = activeHref === item.href;
-
+          const isActive = isDashboardItemActive(pathname, item.href);
           return (
             <li key={item.href}>
               <Link
                 href={item.href}
                 aria-current={isActive ? "page" : undefined}
-                className={`group flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
-                  isActive
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                }`}
+                className={`group relative flex min-h-11 items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-[background-color,color,transform] duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${isActive ? "bg-primary/15 text-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground active:scale-[0.99]"}`}
               >
-                <item.icon
-                  aria-hidden="true"
-                  className={`size-4 shrink-0 transition-transform motion-safe:duration-200 ${
-                    isActive ? "scale-110" : "group-hover:scale-105"
-                  }`}
-                />
+                {isActive ? <span aria-hidden="true" className="absolute inset-y-2 left-0 w-1 rounded-r-full bg-primary transition-transform duration-200" /> : null}
+                <item.icon aria-hidden="true" className="size-4 shrink-0" />
                 <span>{item.label}</span>
               </Link>
             </li>
